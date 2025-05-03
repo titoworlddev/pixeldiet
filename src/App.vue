@@ -354,7 +354,7 @@
             :class="[
               'rounded py-2 px-2 text-sm font-medium transition-colors',
               selectedFormat === format.value
-                ? 'bg-blue-500 text-white'
+                ? 'bg-[#4f46e5] text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             ]"
             @click="handleFormatChange(format.value)"
