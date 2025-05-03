@@ -1,8 +1,8 @@
-# Squish - Compresor de Imágenes
+# PixelDiet - Compresor de Imágenes
 
 ## Descripción
 
-Squish es una aplicación web que permite comprimir y convertir imágenes a varios formatos (AVIF, JPEG, WEBP, PNG, JXL) de manera sencilla y eficiente. La aplicación está diseñada para ser intuitiva y fácil de usar, permitiendo a los usuarios optimizar sus imágenes para uso web o compartir en medios digitales.
+PixelDiet es una aplicación web que permite comprimir y convertir imágenes a varios formatos (AVIF, JPEG, WEBP, PNG, JXL) de manera sencilla y eficiente. La aplicación está diseñada para ser intuitiva y fácil de usar, permitiendo a los usuarios optimizar sus imágenes para uso web o compartir en medios digitales.
 
 ## Características principales
 
@@ -31,7 +31,7 @@ Squish es una aplicación web que permite comprimir y convertir imágenes a vari
 git clone [URL del repositorio]
 
 # Entrar en el directorio del proyecto
-cd squish-image
+cd pixeldiet
 
 # Instalar dependencias
 npm install
@@ -43,7 +43,7 @@ npm run dev
 ## Estructura del proyecto
 
 ```
-squish-image/
+pixeldiet/
 ├── docs/                 # Documentación del proyecto
 ├── public/               # Recursos públicos
 ├── src/
