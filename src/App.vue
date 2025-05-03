@@ -352,7 +352,7 @@
             v-for="format in formatOptions"
             :key="format.value"
             :class="[
-              'rounded py-2 px-2 text-sm font-medium transition-colors',
+              'rounded py-2 px-2 text-sm font-medium transition-colors outline-none',
               selectedFormat === format.value
                 ? 'bg-[#4f46e5] text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -391,11 +391,14 @@
 
     <!-- Área de carga -->
     <div
-      class="border-2 border-dashed border-gray-300 rounded-lg p-5 mb-4 bg-white shadow-md transition-colors duration-200 cursor-pointer"
+      class="rounded-lg p-5 mb-4 bg-white shadow-md transition-colors duration-200 cursor-pointer"
       @dragover="onDragOver"
       @dragleave="onDragLeave"
       @drop="onDrop"
-      @click="$refs.fileUploadRef && $refs.fileUploadRef.$el.querySelector('input').click()"
+      @click="
+        $refs.fileUploadRef &&
+          $refs.fileUploadRef.$el.querySelector('input').click()
+      "
     >
       <div class="flex items-center justify-center">
         <div class="flex flex-col items-center">
