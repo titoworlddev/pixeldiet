@@ -322,7 +322,7 @@
 </script>
 
 <template>
-  <Toast position="top-center" />
+  <Toast position="top-center" class="custom-toast" />
 
   <main class="min-h-screen max-w-4xl mx-auto p-4 flex flex-col gap-4">
     <!-- Cabecera -->
@@ -569,6 +569,32 @@
   :deep(.p-tooltip .p-tooltip-text) {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
+  }
+
+  /* Estilos para los Toast */
+  :deep(.p-toast) {
+    opacity: 1 !important;
+  }
+
+  :deep(.p-toast .p-toast-message .p-toast-icon-close) {
+    opacity: 1 !important;
+    color: black !important;
+    background-color: transparent !important;
+    outline: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  :deep(.p-toast .p-toast-icon-close:focus),
+  :deep(.p-toast .p-toast-icon-close:hover) {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  :deep(.p-toast .p-toast-icon-close-icon) {
+    color: black !important;
+    visibility: visible !important;
   }
 
   /* Ajustes para móviles */

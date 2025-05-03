@@ -110,17 +110,59 @@ a:hover {
   color: inherit !important;
 }
 
-.p-toast .p-toast-message .p-toast-icon-close {
-  color: white !important;
+/* Estilos más específicos para el icono de cierre */
+.custom-toast .p-toast-message .p-toast-icon-close {
+  color: #000000 !important; /* Negro para máximo contraste */
+  font-size: 1.2rem !important; /* Hacerlo un poco más grande */
+  opacity: 0.7 !important; /* Algo de transparencia */
+  background-color: transparent !important;
+  visibility: visible !important; /* Forzar visibilidad */
+  display: block !important; /* Asegurar que se muestre */
 }
 
-.p-toast .p-toast-message .p-toast-icon-close:hover {
-  color: rgba(255, 255, 255, 0.8) !important;
+.custom-toast .p-toast-message .p-toast-icon-close:hover {
+  color: #000000 !important;
+  opacity: 1 !important; /* Completamente opaco al pasar el mouse */
+  background-color: transparent !important;
 }
 
-.p-toast .p-toast-message.p-toast-message-success .p-toast-icon-close,
-.p-toast .p-toast-message.p-toast-message-info .p-toast-icon-close,
-.p-toast .p-toast-message.p-toast-message-warn .p-toast-icon-close,
-.p-toast .p-toast-message.p-toast-message-error .p-toast-icon-close {
-  color: rgba(255, 255, 255, 0.8) !important;
+.custom-toast .p-toast-message.p-toast-message-success .p-toast-icon-close,
+.custom-toast .p-toast-message.p-toast-message-info .p-toast-icon-close,
+.custom-toast .p-toast-message.p-toast-message-warn .p-toast-icon-close,
+.custom-toast .p-toast-message.p-toast-message-error .p-toast-icon-close {
+  color: #000000 !important;
+  background-color: transparent !important;
+}
+
+/* Estilos específicos para el icono */
+.custom-toast .p-toast-icon-close-icon {
+  color: #000000 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Estilos para el boton de cierre de Toast */
+.p-toast .p-toast-icon-close {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+.p-toast .p-toast-icon-close:hover,
+.p-toast .p-toast-icon-close:focus,
+.p-toast .p-toast-icon-close:active {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+.p-toast .p-toast-icon-close .p-icon {
+  color: #000 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
