@@ -329,7 +329,7 @@
     <div class="text-center mb-4">
       <div class="flex items-center justify-center mb-1">
         <span class="pi pi-image text-xl mr-2 text-blue-500"></span>
-        <h1 class="text-2xl font-bold">CompressorPro</h1>
+        <h1 class="text-2xl font-bold">PixelDiet</h1>
       </div>
       <p class="text-sm text-gray-600">
         Optimiza tus imágenes web con un solo clic, ahorra espacio sin perder
@@ -540,7 +540,7 @@
     <!-- Footer -->
     <footer class="mt-auto text-center text-xs text-gray-500">
       <p>
-        CompressorPro v1.0.0 | Comprime y convierte imágenes directamente en tu
+        PixelDiet v1.0.0 | Comprime y convierte imágenes directamente en tu
         navegador
       </p>
     </footer>
