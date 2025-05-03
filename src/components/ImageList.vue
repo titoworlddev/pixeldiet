@@ -2,56 +2,56 @@
 import { ref, computed } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
+import ProgressBar from 'primevue/progressbar';
 import Card from 'primevue/card';
+import Badge from 'primevue/badge';
+import { formatBytes, calculateReduction } from '../utils';
+import { useImageProcessor } from '../composables/useImageProcessor';
 import CompressionSettings from './CompressionSettings.vue';
 import CompressionStats from './CompressionStats.vue';
-import { useImageProcessor } from '../composables';
-import { formatBytes, calculateReduction } from '../utils';
+
+const toast = useToast();
+const { compressImage, downloadSingleImage, downloadAllImages } = useImageProcessor();
 
 const props = defineProps({
   images: {
     type: Array,
-    required: true
+    default: () => []
   }
 });
 
-const toast = useToast();
 const emits = defineEmits(['images-processed']);
-const { compressImage, downloadSingleImage, downloadAllImages } = useImageProcessor();
+
+const compressedImagesCount = computed(() => {
+  return props.images.filter(img => img.isCompressed).length;
+});
+
+const hasCompressedImages = computed(() => compressedImagesCount.value > 0);
+const showSettingsPanel = computed(() => props.images.length > 0);
 
 const isProcessing = ref(false);
+const downloadingAll = ref(false);
 
-const hasProcessedImages = computed(() => {
-  return props.images.some(img => img.isCompressed);
-});
-
-const totalOriginalSize = computed(() => {
-  return props.images.reduce((total, img) => total + img.originalSize, 0);
-});
-
-const totalCompressedSize = computed(() => {
-  return props.images.reduce((total, img) => total + (img.compressedSize || 0), 0);
-});
-
-const processAllImages = async (config) => {
+const handleCompressImages = async (settings) => {
+  if (isProcessing.value) return;
+  
   isProcessing.value = true;
   
   try {
     // Procesar cada imagen en secuencia
     for (const image of props.images) {
-      const result = await compressImage(image, config.format, config.quality);
+      const result = await compressImage(image, settings.format, settings.quality);
       
       // Actualizar los datos de la imagen comprimida
       image.isCompressed = true;
       image.compressedSize = result.compressedSize;
       image.compressedSrc = result.compressedSrc;
-      image.compressedType = config.format;
+      image.compressedType = settings.format;
     }
     
-    // Notificar que las imágenes han sido procesadas
-    emits('images-processed', props.images);
+    // Emitir evento para actualizar las imágenes en el componente padre
+    emits('images-processed', [...props.images]);
     
-    // Mostrar notificación de éxito
     toast.add({
       severity: 'success',
       summary: 'Compresión completada',
@@ -59,13 +59,12 @@ const processAllImages = async (config) => {
       life: 3000
     });
   } catch (error) {
-    console.error('Error al procesar imágenes:', error);
+    console.error('Error al comprimir imágenes:', error);
     
-    // Mostrar notificación de error
     toast.add({
       severity: 'error',
-      summary: 'Error de compresión',
-      detail: 'Ha ocurrido un error al comprimir las imágenes',
+      summary: 'Error',
+      detail: 'Ha ocurrido un error al procesar las imágenes',
       life: 3000
     });
   } finally {
@@ -73,81 +72,88 @@ const processAllImages = async (config) => {
   }
 };
 
-const handleDownloadAll = () => {
+const handleDownloadSingle = async (image) => {
   try {
-    downloadAllImages(props.images);
+    await downloadSingleImage(image);
     
     toast.add({
       severity: 'info',
       summary: 'Descarga iniciada',
-      detail: props.images.length > 1 ? 'Descargando todas las imágenes en formato ZIP' : 'Descargando imagen',
-      life: 3000
+      detail: `${image.name} se está descargando`,
+      life: 2000
     });
   } catch (error) {
-    console.error('Error al descargar:', error);
+    console.error('Error al descargar imagen:', error);
+    
     toast.add({
       severity: 'error',
-      summary: 'Error de descarga',
-      detail: 'No se pudo iniciar la descarga',
+      summary: 'Error',
+      detail: 'Ha ocurrido un error al descargar la imagen',
       life: 3000
     });
   }
 };
 
-const handleDownloadSingle = (image) => {
+const handleDownloadAll = async () => {
+  if (downloadingAll.value) return;
+  
+  downloadingAll.value = true;
+  
   try {
-    downloadSingleImage(image);
+    const compressedImages = props.images.filter(img => img.isCompressed);
+    await downloadAllImages(compressedImages);
     
     toast.add({
       severity: 'info',
       summary: 'Descarga iniciada',
-      detail: `Descargando ${image.name}`,
-      life: 3000
+      detail: 'Todas las imágenes comprimidas se están descargando como ZIP',
+      life: 2000
     });
   } catch (error) {
-    console.error('Error al descargar:', error);
+    console.error('Error al descargar todas las imágenes:', error);
+    
     toast.add({
       severity: 'error',
-      summary: 'Error de descarga',
-      detail: 'No se pudo iniciar la descarga',
+      summary: 'Error',
+      detail: 'Ha ocurrido un error al descargar las imágenes',
       life: 3000
     });
+  } finally {
+    downloadingAll.value = false;
   }
 };
 </script>
 
 <template>
-  <div v-if="images.length > 0" class="w-full max-w-5xl mx-auto">
-    <!-- Panel de configuración de compresión -->
+  <div class="w-full">
     <CompressionSettings 
+      v-if="showSettingsPanel" 
       :is-processing="isProcessing" 
-      @process-images="processAllImages" 
+      @process-images="handleCompressImages" 
     />
     
-    <!-- Mostrar estadísticas de compresión si hay imágenes procesadas -->
-    <div v-if="hasProcessedImages" class="mb-6 flex flex-col gap-4">
-      <div class="flex justify-between items-center">
-        <h3 class="text-lg font-medium">Estadísticas de compresión</h3>
-        <Button 
-          @click="handleDownloadAll" 
-          label="Descargar todas" 
-          icon="pi pi-download"
-          class="btn-download"
-        />
-      </div>
-      
-      <CompressionStats 
-        :original-size="totalOriginalSize" 
-        :compressed-size="totalCompressedSize" 
+    <div v-if="hasCompressedImages" class="flex justify-end mb-4">
+      <Button 
+        @click="handleDownloadAll"
+        :loading="downloadingAll"
+        :label="downloadingAll ? 'Preparando...' : 'Descargar todas (.zip)'"
+        icon="pi pi-download"
+        class="mr-2"
+        outlined
       />
     </div>
     
-    <!-- Cuadrícula de imágenes -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-      <Card v-for="image in images" :key="image.id" class="image-card card-hover">
+    <div v-if="props.images.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Card v-for="image in props.images" :key="image.id" class="image-card shadow-sm">
         <template #header>
-          <div class="relative image-preview">
-            <img :src="image.isCompressed ? image.compressedSrc : image.src" class="w-full h-48 object-contain bg-gray-100" />
+          <div class="relative">
+            <img 
+              :src="image.isCompressed ? image.compressedSrc : image.src" 
+              :alt="image.name"
+              class="w-full h-40 object-cover"
+            />
+            <Badge v-if="image.isCompressed" value="Comprimida" severity="success" class="absolute top-2 right-2" />
+            <Badge v-else :value="image.status || 'Listo para comprimir'" severity="info" class="absolute top-2 right-2" />
           </div>
         </template>
         
@@ -156,7 +162,7 @@ const handleDownloadSingle = (image) => {
         </template>
         
         <template #content>
-          <div class="text-xs text-gray-500">
+          <div class="text-sm space-y-1">
             <p>Original: {{ formatBytes(image.originalSize) }}</p>
             <p v-if="image.isCompressed">
               Comprimido: {{ formatBytes(image.compressedSize) }}
@@ -168,30 +174,45 @@ const handleDownloadSingle = (image) => {
               </span>
             </p>
           </div>
+          
+          <div v-if="image.isCompressed" class="mt-3">
+            <CompressionStats 
+              :originalSize="image.originalSize" 
+              :compressedSize="image.compressedSize" 
+            />
+          </div>
         </template>
         
         <template #footer>
           <div class="flex justify-end">
             <Button 
               v-if="image.isCompressed"
-              @click="handleDownloadSingle(image)" 
-              icon="pi pi-download" 
-              text 
-              size="small" 
+              @click="handleDownloadSingle(image)"
+              icon="pi pi-download"
               class="p-button-sm"
+              outlined
             />
           </div>
         </template>
       </Card>
     </div>
-  </div>
-  
-  <div v-else class="text-center py-8">
-    <p class="text-gray-500">No hay imágenes para mostrar.</p>
-    <p class="text-sm text-gray-400">Sube algunas imágenes para comenzar.</p>
+    
+    <div v-else class="text-center py-8 bg-white rounded-lg shadow-sm">
+      <div class="flex flex-col items-center">
+        <i class="pi pi-image text-4xl text-gray-300 mb-3"></i>
+        <p class="text-gray-500">No hay imágenes cargadas</p>
+        <p class="text-sm text-gray-400 mt-1">Arrastra o selecciona imágenes para comenzar</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* Los estilos ahora se manejan principalmente a través del archivo global.css */
+.image-card {
+  transition: transform 0.2s;
+}
+
+.image-card:hover {
+  transform: translateY(-5px);
+}
 </style>

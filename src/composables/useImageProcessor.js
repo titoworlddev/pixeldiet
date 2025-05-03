@@ -13,48 +13,105 @@ export function useImageProcessor() {
   const compressImage = (image, format, quality) => {
     return new Promise((resolve, reject) => {
       try {
+        console.log(`Comprimiendo imagen: ${image.name}, formato: ${format}, calidad: ${quality}%`);
+        console.log(`Tamaño original: ${image.originalSize} bytes`);
+        
+        // Verificar si estamos cambiando de formato
+        const changingFormat = image.type !== format;
+        console.log(`Cambiando formato: ${changingFormat} (${image.type} -> ${format})`);
+        
         const canvas = document.createElement('canvas');
         const img = new Image();
         
         img.onload = () => {
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          
+          // Usar dimensiones originales
           canvas.width = img.width;
           canvas.height = img.height;
+          console.log(`Dimensiones: ${canvas.width}x${canvas.height}`);
           
-          // Dibujar la imagen en el canvas
+          // Preparar canvas según formato
+          if (format === 'image/png') {
+            // Para PNG, limpiar canvas para mantener transparencia
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          } else if (format === 'image/jpeg') {
+            // Para JPEG, fondo blanco
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+          
+          // Dibujar la imagen
           ctx.drawImage(img, 0, 0);
           
-          // Convertir la calidad a un valor entre 0 y 1
-          const normalizedQuality = quality / 100;
+          // Ajustar calidad según formato
+          let qualityValue = quality / 100;
           
-          // Comprimir la imagen al formato deseado
-          canvas.toBlob((blob) => {
+          // Ajustes de calidad según formato
+          if (format === 'image/jpeg') {
+            // Para JPEG, limitar calidad mínima
+            qualityValue = Math.max(0.5, qualityValue);
+          } else if (format === 'image/webp') {
+            // Para WEBP, ajustar rango
+            qualityValue = Math.min(0.9, qualityValue);
+          } else if (format === 'image/png') {
+            // PNG no usa parámetro de calidad
+            qualityValue = undefined;
+          }
+          
+          console.log(`Formato: ${format}, Calidad efectiva: ${qualityValue ?? 'N/A'}`);
+          
+          // Comprimir
+          canvas.toBlob(blob => {
             if (!blob) {
-              reject(new Error('Error al generar el blob de la imagen'));
+              console.error('Error: No se pudo generar el blob');
+              reject(new Error('Error al comprimir la imagen'));
               return;
             }
             
-            // Convertir el blob a base64 para visualización
+            console.log(`Tamaño comprimido: ${blob.size} bytes`);
+            console.log(`Reducción: ${((image.originalSize - blob.size) / image.originalSize * 100).toFixed(2)}%`);
+            
+            // Si la compresión aumenta el tamaño y no cambiamos formato, usar original
+            if (blob.size > image.originalSize && !changingFormat) {
+              console.log('La compresión aumentó el tamaño. Manteniendo original.');
+              resolve({
+                compressedSrc: image.src,
+                compressedSize: image.originalSize,
+                compressedType: image.type
+              });
+              return;
+            }
+            
+            // Convertir blob a base64
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = e => {
+              console.log('Compresión completada exitosamente.');
               resolve({
                 compressedSrc: e.target.result,
                 compressedSize: blob.size,
-                blob
+                compressedType: format
               });
             };
             
+            reader.onerror = () => {
+              console.error('Error al leer el blob');
+              reject(new Error('Error al procesar la imagen comprimida'));
+            };
+            
             reader.readAsDataURL(blob);
-          }, format, normalizedQuality);
+          }, format, qualityValue);
         };
         
         img.onerror = () => {
-          reject(new Error('Error al cargar la imagen'));
+          console.error('Error al cargar la imagen');
+          reject(new Error('Error al cargar la imagen para compresión'));
         };
         
-        // Cargar la imagen desde el src existente
+        // Cargar imagen desde src
         img.src = image.src;
       } catch (error) {
+        console.error('Error en proceso de compresión:', error);
         reject(error);
       }
     });
@@ -119,22 +176,24 @@ export function useImageProcessor() {
       // Agregar cada imagen al ZIP
       compressedImages.forEach((image, index) => {
         const ext = MIME_TO_EXTENSION[image.compressedType] || '.png';
-        const fileName = `imagen_${index + 1}${ext}`;
+        const fileName = image.name.split('.')[0] + '-compressed' + ext;
         
-        // Extraer datos de base64
+        // Obtener los datos binarios de la imagen comprimida
         const base64Data = image.compressedSrc.split(',')[1];
         zip.file(fileName, base64Data, { base64: true });
       });
       
       // Generar el archivo ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, 'imagenes_comprimidas.zip');
+      
+      // Descargar el archivo ZIP
+      saveAs(zipBlob, 'compressed-images.zip');
     } catch (error) {
       console.error('Error al descargar todas las imágenes:', error);
       throw error; // Re-lanzar para manejarlo en el componente
     }
   };
-  
+
   return {
     compressImage,
     downloadSingleImage,

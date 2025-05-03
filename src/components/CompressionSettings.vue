@@ -26,13 +26,19 @@ const handleProcessImages = () => {
 </script>
 
 <template>
-  <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
     <h3 class="text-lg font-medium mb-3">Configuración de compresión</h3>
     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label class="block mb-2 text-sm font-medium">Formato de salida</label>
-        <SelectButton v-model="selectedFormat" :options="FORMAT_OPTIONS" optionLabel="name" optionValue="value" />
+        <SelectButton 
+          v-model="selectedFormat" 
+          :options="FORMAT_OPTIONS" 
+          optionLabel="name" 
+          optionValue="value"
+          class="format-selector"
+        />
       </div>
       
       <div>
@@ -41,14 +47,29 @@ const handleProcessImages = () => {
       </div>
     </div>
     
-    <div class="mt-4">
+    <div class="mt-4 flex justify-center">
       <Button 
         @click="handleProcessImages" 
         :loading="isProcessing"
         :label="isProcessing ? 'Procesando...' : 'Comprimir todas las imágenes'"
         icon="pi pi-compress"
-        class="w-auto btn-compress"
+        severity="primary"
+        class="w-auto"
       />
     </div>
   </div>
 </template>
+
+<style scoped>
+.format-selector :deep(.p-button) {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  color: #4b5563;
+}
+
+.format-selector :deep(.p-button.p-highlight) {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  color: white;
+}
+</style>

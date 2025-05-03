@@ -104,3 +104,23 @@ a:hover {
 .p-button.p-component.p-button-icon-only.p-button-text.p-button-sm {
   color: #4f46e5 !important;
 }
+
+/* Estilos personalizados para Toast */
+.p-toast .p-toast-message .p-toast-message-content .p-toast-message-icon {
+  color: inherit !important;
+}
+
+.p-toast .p-toast-message .p-toast-icon-close {
+  color: white !important;
+}
+
+.p-toast .p-toast-message .p-toast-icon-close:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-success .p-toast-icon-close,
+.p-toast .p-toast-message.p-toast-message-info .p-toast-icon-close,
+.p-toast .p-toast-message.p-toast-message-warn .p-toast-icon-close,
+.p-toast .p-toast-message.p-toast-message-error .p-toast-icon-close {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
