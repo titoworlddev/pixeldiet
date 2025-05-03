@@ -160,8 +160,11 @@ const handleDownloadSingle = (image) => {
             <p>Original: {{ formatBytes(image.originalSize) }}</p>
             <p v-if="image.isCompressed">
               Comprimido: {{ formatBytes(image.compressedSize) }}
-              <span class="text-green-600 ml-1">
-                (-{{ calculateReduction(image.originalSize, image.compressedSize) }}%)
+              <span :class="{
+                'text-green-600': !calculateReduction(image.originalSize, image.compressedSize).includes('+'),
+                'text-red-600': calculateReduction(image.originalSize, image.compressedSize).includes('+')
+              }" class="ml-1">
+                ({{ calculateReduction(image.originalSize, image.compressedSize) }})
               </span>
             </p>
           </div>

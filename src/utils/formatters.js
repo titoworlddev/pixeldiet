@@ -21,9 +21,18 @@ export const formatBytes = (bytes, decimals = 2) => {
  * Calcula el porcentaje de reducción entre dos tamaños
  * @param {number} originalSize - Tamaño original
  * @param {number} compressedSize - Tamaño comprimido
- * @returns {number} - Porcentaje de reducción
+ * @returns {string} - Porcentaje de reducción con el formato adecuado
  */
 export const calculateReduction = (originalSize, compressedSize) => {
-  if (originalSize === 0 || compressedSize === 0) return 0;
-  return Math.round(((originalSize - compressedSize) / originalSize) * 100);
+  if (originalSize === 0 || compressedSize === 0) return '0%';
+  
+  const reduccionPorcentaje = ((originalSize - compressedSize) / originalSize) * 100;
+  
+  // Si la imagen comprimida es más grande que la original (reducción negativa)
+  if (reduccionPorcentaje < 0) {
+    return `+${Math.abs(Math.round(reduccionPorcentaje))}%`;
+  }
+  
+  // Caso normal, reducción positiva
+  return `${Math.round(reduccionPorcentaje)}%`;
 };

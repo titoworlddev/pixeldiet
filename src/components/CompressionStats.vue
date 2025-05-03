@@ -14,6 +14,7 @@ const props = defineProps({
 });
 
 const compressionRatio = computed(() => calculateReduction(props.originalSize, props.compressedSize));
+const isIncrease = computed(() => compressionRatio.value.includes('+'));
 </script>
 
 <template>
@@ -25,8 +26,11 @@ const compressionRatio = computed(() => calculateReduction(props.originalSize, p
       </div>
       <div>
         <div class="text-center">
-          <span class="text-xl font-bold text-green-600">{{ compressionRatio }}%</span>
-          <p class="text-xs text-gray-500">Reducción</p>
+          <span :class="{
+            'text-green-600': !isIncrease,
+            'text-red-600': isIncrease
+          }" class="text-xl font-bold">{{ compressionRatio }}</span>
+          <p class="text-xs text-gray-500">{{ isIncrease ? 'Aumento' : 'Reducción' }}</p>
         </div>
       </div>
     </div>

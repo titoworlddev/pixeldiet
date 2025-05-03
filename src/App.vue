@@ -24,7 +24,7 @@ const handleImagesProcessed = (processedImages) => {
         <div class="flex items-center justify-between">
           <div class="flex items-center">
             <span class="pi pi-image text-xl mr-2 text-blue-500"></span>
-            <h1 class="text-xl font-semibold text-gray-800">Squish</h1>
+            <h1 class="text-xl font-semibold text-gray-800">CompressorPro - Compresor de Imágenes</h1>
           </div>
           <div class="text-sm text-gray-500">
             Comprime y convierte tus imágenes a AVIF, JPEG, WEBP, PNG, o JXL
@@ -46,7 +46,7 @@ const handleImagesProcessed = (processedImages) => {
     
     <footer class="bg-white border-t py-4 mt-auto">
       <div class="container mx-auto px-4 text-center text-sm text-gray-500">
-        <p>Squish - Compresor de imágenes {{ new Date().getFullYear() }}</p>
+        <p>CompressorPro - Compresor de imágenes {{ new Date().getFullYear() }}</p>
       </div>
     </footer>
   </div>

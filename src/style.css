@@ -72,3 +72,35 @@ a:hover {
     background-color: #f9f9f9;
   }
 }
+
+/* Estilos personalizados para botones de PrimeVue */
+.p-button.p-button-text {
+  color: #4f46e5 !important; /* Color violeta para asegurar visibilidad */
+}
+
+.p-button.p-button-danger.p-button-text {
+  color: #ef4444 !important; /* Rojo para botones de peligro */
+}
+
+.p-button.p-button-text .p-button-icon,
+.p-button.p-button-text .p-button-label {
+  color: inherit !important;
+}
+
+.p-button.p-component {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.p-button.p-component .p-button-label,
+.p-button.p-component .p-button-icon {
+  color: white !important;
+}
+
+.p-fileupload-file-remove.p-button-rounded.p-button-text {
+  color: #ef4444 !important;
+}
+
+.p-button.p-component.p-button-icon-only.p-button-text.p-button-sm {
+  color: #4f46e5 !important;
+}
