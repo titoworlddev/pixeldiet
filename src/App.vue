@@ -326,7 +326,7 @@
 
   <main class="min-h-screen max-w-4xl mx-auto p-4 flex flex-col gap-4">
     <!-- Cabecera -->
-    <div class="text-center">
+    <div class="text-center mb-4">
       <div class="flex items-center justify-center mb-1">
         <span class="pi pi-image text-xl mr-2 text-blue-500"></span>
         <h1 class="text-2xl font-bold">CompressorPro</h1>
@@ -391,10 +391,11 @@
 
     <!-- Área de carga -->
     <div
-      class="border-2 border-dashed border-gray-300 rounded-lg p-5 mb-4 bg-white shadow-md transition-colors duration-200"
+      class="border-2 border-dashed border-gray-300 rounded-lg p-5 mb-4 bg-white shadow-md transition-colors duration-200 cursor-pointer"
       @dragover="onDragOver"
       @dragleave="onDragLeave"
       @drop="onDrop"
+      @click="$refs.fileUploadRef && $refs.fileUploadRef.$el.querySelector('input').click()"
     >
       <div class="flex items-center justify-center">
         <div class="flex flex-col items-center">
