@@ -1,8 +1,11 @@
-import imageCompression from 'browser-image-compression';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { MIME_TO_EXTENSION } from '../utils';
 import { fromBlob, blobToURL } from 'image-resize-compress';
+
+// Importaciones dinámicas precargadas
+let jxlModulePromise = import('@jsquash/jxl');
+let avifModulePromise = import('@jsquash/avif');
 
 /**
  * Procesa y comprime imágenes con controles optimizados por formato
@@ -121,8 +124,8 @@ export function useImageProcessor() {
    */
   const compressJXL = async (blob, quality) => {
     try {
-      // Importar dinámicamente el codec JXL
-      const jxlModule = await import('@jsquash/jxl');
+      // Obtener el módulo JXL precargado
+      const jxlModule = await jxlModulePromise;
       
       // Convertir el blob a imagen para obtener las dimensiones
       const img = await blobToImage(blob);
@@ -179,8 +182,8 @@ export function useImageProcessor() {
    */
   const compressAVIF = async (blob, quality) => {
     try {
-      // Importar dinámicamente el codec AVIF
-      const avifModule = await import('@jsquash/avif');
+      // Obtener el módulo AVIF precargado
+      const avifModule = await avifModulePromise;
       
       // Convertir el blob a imagen para obtener las dimensiones
       const img = await blobToImage(blob);
