@@ -119,20 +119,24 @@ export function useImageProcessor() {
       if (blob.size < 10000 && blob.type === 'image/png') {
         // Para PNGs pequeños con transparencia, a veces es mejor mantener el formato original
         console.log('PNG pequeño detectado, evaluando si es mejor mantenerlo');
-        
+
         // Comprimir como WebP para comparar
         const webpBlob = await fromBlob(blob, quality, 'auto', 'auto', 'webp');
-        
+
         // Si el WebP es más grande, devolver el PNG original
         if (webpBlob.size > blob.size) {
-          console.log(`Mantener PNG original: ${blob.size} bytes vs WebP: ${webpBlob.size} bytes`);
+          console.log(
+            `Mantener PNG original: ${blob.size} bytes vs WebP: ${webpBlob.size} bytes`
+          );
           return new Blob([await blob.arrayBuffer()], { type: 'image/webp' });
         }
-        
-        console.log(`Usando WebP comprimido: ${webpBlob.size} bytes vs PNG original: ${blob.size} bytes`);
+
+        console.log(
+          `Usando WebP comprimido: ${webpBlob.size} bytes vs PNG original: ${blob.size} bytes`
+        );
         return webpBlob;
       }
-      
+
       // Compresión normal para el resto de casos
       return fromBlob(blob, quality, 'auto', 'auto', 'webp');
     } catch (error) {
@@ -156,13 +160,15 @@ export function useImageProcessor() {
     try {
       // Intentar comprimir con WebP primero
       const webpBlob = await compressWebP(blob, quality);
-      
+
       // Si WebP es más grande que el PNG original y la imagen es pequeña, mantener el original
       if (blob.size < 20000 && webpBlob.size > blob.size) {
-        console.log(`Mantener PNG original (${blob.size} bytes) en lugar de WebP convertido (${webpBlob.size} bytes)`);
+        console.log(
+          `Mantener PNG original (${blob.size} bytes) en lugar de WebP convertido (${webpBlob.size} bytes)`
+        );
         return new Blob([await blob.arrayBuffer()], { type: 'image/png' });
       }
-      
+
       return new Blob([webpBlob], { type: 'image/png' });
     } catch (error) {
       console.error('Error en compressPNG:', error);
@@ -229,7 +235,7 @@ export function useImageProcessor() {
       }
 
       const ext = MIME_TO_EXTENSION[image.compressedType] || '.png';
-      const fileName = image.name.split('.')[0] + '-compressed' + ext;
+      const fileName = image.name.split('.')[0] + ext;
 
       const blob = base64ToBlob(image.compressedSrc, image.compressedType);
       saveAs(blob, fileName);
@@ -268,7 +274,7 @@ export function useImageProcessor() {
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
 
-      saveAs(zipBlob, 'imagenes_comprimidas.zip');
+      saveAs(zipBlob, 'pixeldiet_compressed.zip');
     } catch (error) {
       console.error('Error al descargar todas las imágenes:', error);
       throw error;

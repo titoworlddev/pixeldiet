@@ -11,7 +11,8 @@
     calculateReduction,
     FORMAT_OPTIONS,
     MAX_IMAGES,
-    MAX_FILE_SIZE
+    MAX_FILE_SIZE,
+    MIME_TO_EXTENSION
   } from './utils';
   import { useImageProcessor } from './composables/useImageProcessor';
 
@@ -471,7 +472,15 @@
           />
 
           <div class="flex-grow min-w-0">
-            <p class="truncate text-sm font-medium">{{ image.name }}</p>
+            <p class="truncate text-sm font-medium">
+              {{ image.name }}
+              <span
+                v-if="image.isCompressed && image.compressedType !== image.type"
+                class="text-xs text-blue-500"
+              >
+                → {{ image.name.split('.')[0] + (MIME_TO_EXTENSION[image.compressedType] || '.png') }}
+              </span>
+            </p>
             <div class="flex items-center text-xs space-x-2">
               <span>{{ formatBytes(image.originalSize) }}</span>
               <span v-if="image.isCompressed" class="flex items-center">
