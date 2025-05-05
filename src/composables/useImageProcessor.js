@@ -149,59 +149,68 @@ export function useImageProcessor() {
   };
 
   /**
-   * Comprime una imagen AVIF con configuración optimizada
+   * Comprime una imagen AVIF con alta calidad y eficiencia usando @jsquash/avif
    * @param {Blob} blob - Blob de la imagen original
    * @param {number} quality - Calidad de compresión (1-100)
    * @returns {Promise<Blob>} Blob de la imagen comprimida
    */
   const compressAVIF = async (blob, quality) => {
-    const img = await blobToImage(blob);
-
-    const width = Math.floor(img.width / 16) * 16;
-    const height = Math.floor(img.height / 16) * 16;
-
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-
-    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-    tempCtx.imageSmoothingEnabled = true;
-    tempCtx.imageSmoothingQuality = 'high';
-    tempCtx.drawImage(img, 0, 0, width, height);
-
-    const imageData = tempCtx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    const strength = 2;
-    for (let i = 0; i < data.length; i += 4) {
-      if (i % 16 === 0) {
-        data[i] = Math.round(data[i] / strength) * strength;
-        data[i + 1] = Math.round(data[i + 1] / strength) * strength;
-        data[i + 2] = Math.round(data[i + 2] / strength) * strength;
-      }
+    try {
+      // Importar dinámicamente el codec AVIF
+      const avifModule = await import('@jsquash/avif');
+      
+      // Convertir el blob a imagen para obtener las dimensiones
+      const img = await blobToImage(blob);
+      
+      // Crear un canvas con las dimensiones originales
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Dibujar la imagen en el canvas con alta calidad
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      // Obtener los datos de la imagen
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Configurar los parámetros de codificación AVIF optimizados para calidad/tamaño
+      // quality: calidad de compresión (0-100)
+      // speed: velocidad de codificación (0-8, menor = mejor calidad pero más lento)
+      // subsample: submuestreo de crominancia (0 = 4:4:4, 1 = 4:2:0)
+      // sharpness: nitidez (0-7, mayor = más nitidez)
+      const avifOptions = {
+        quality: Math.min(quality, 90), // Limitar a 90 para mantener buena compresión
+        speed: 2,                    // Valor bajo para mejor calidad
+        subsample: 0,                // Sin submuestreo para mantener calidad de color
+        sharpness: 3,                // Mantener detalles nítidos
+        tileColsLog2: 0,             // Optimización de mosaicos
+        tileRowsLog2: 0,
+        chromaDeltaQ: false          // Mejor calidad visual
+      };
+      
+      console.log('Codificando AVIF con opciones:', avifOptions);
+      console.log('Tamaño de ImageData:', imageData.data.length, 'bytes');
+      
+      // Codificar la imagen a AVIF
+      const avifBuffer = await avifModule.encode(imageData, avifOptions);
+      console.log('Tamaño de buffer AVIF:', avifBuffer.byteLength, 'bytes');
+      console.log('Ratio de compresión:', (avifBuffer.byteLength / (imageData.data.length / 4)).toFixed(2) + '%');
+      
+      // Crear un blob con el buffer AVIF
+      return new Blob([avifBuffer], { type: 'image/avif' });
+    } catch (error) {
+      console.error('Error en la compresión AVIF:', error);
+      
+      // En caso de error, usar el método de respaldo con WebP
+      console.warn('Usando método de respaldo WebP para AVIF');
+      const webpBlob = await compressWebP(blob, Math.max(quality, 85));
+      return new Blob([webpBlob], { type: 'image/avif' });
     }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-
-    const ctx = canvas.getContext('2d', { alpha: true });
-    ctx.putImageData(imageData, 0, 0);
-
-    const adjustedQuality = Math.max(quality * 0.6, 40);
-
-    return new Promise(resolve => {
-      canvas.toBlob(async canvasBlob => {
-        const finalBlob = await fromBlob(
-          canvasBlob,
-          adjustedQuality,
-          'auto',
-          'auto',
-          'avif'
-        );
-        resolve(finalBlob);
-      }, 'image/png');
-    });
   };
 
   /**
