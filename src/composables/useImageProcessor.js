@@ -25,8 +25,8 @@ export function useImageProcessor() {
       console.log(`Cambiando formato: ${changingFormat} (${image.type} -> ${format})`);
 
       // Para imágenes pequeñas sin cambio de formato, mantener original
-      if (!changingFormat && image.originalSize < 30000) {
-        console.log('Imagen pequeña detectada - manteniendo original para evitar aumento de tamaño');
+      if (!changingFormat && image.originalSize < 10000) { 
+        console.log('Imagen muy pequeña detectada - manteniendo original');
         return {
           compressedSrc: image.src,
           compressedSize: image.originalSize,
@@ -40,19 +40,29 @@ export function useImageProcessor() {
       // Extraer el formato de salida del MIME type
       const outputFormat = format.split('/')[1];
       
-      // Ajustar la calidad según el formato
-      let adjustedQuality = quality;
-      if (outputFormat === 'avif') {
-        // AVIF funciona mejor con valores de calidad más bajos
-        adjustedQuality = Math.min(quality, 60); // Limitar a 60% máximo para AVIF
-      } else if (outputFormat === 'webp') {
-        // WebP funciona bien con valores moderados
-        adjustedQuality = Math.min(quality, 80); // Limitar a 80% máximo para WebP
-      }
+      // Comprimir según el formato específico
+      let compressedBlob;
       
-      // Usar image-resize-compress para comprimir la imagen
-      // Mantener dimensiones originales con 'auto'
-      const compressedBlob = await fromBlob(blob, adjustedQuality, 'auto', 'auto', outputFormat);
+      switch (outputFormat) {
+        case 'png':
+          compressedBlob = await compressPNG(blob, quality);
+          break;
+        case 'avif':
+          compressedBlob = await compressAVIF(blob, quality);
+          break;
+        case 'webp':
+          compressedBlob = await compressWebP(blob, quality);
+          break;
+        case 'jpeg':
+          compressedBlob = await compressJPEG(blob, quality);
+          break;
+        case 'jxl':
+          compressedBlob = await compressJXL(blob, quality);
+          format = 'image/jxl';
+          break;
+        default:
+          compressedBlob = await fromBlob(blob, quality, 'auto', 'auto', outputFormat);
+      }
       
       console.log(`Tamaño comprimido: ${compressedBlob.size} bytes`);
       const reduction = (((image.originalSize - compressedBlob.size) / image.originalSize) * 100).toFixed(2);
@@ -87,6 +97,162 @@ export function useImageProcessor() {
         compressedType: image.type
       };
     }
+  };
+
+  /**
+   * Comprime una imagen PNG con configuración optimizada
+   * @param {Blob} blob - Blob de la imagen original
+   * @param {number} quality - Calidad de compresión (1-100)
+   * @returns {Promise<Blob>} Blob de la imagen comprimida
+   */
+  const compressPNG = async (blob, quality) => {
+    const img = await blobToImage(blob);
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    
+    return new Promise((resolve) => {
+      canvas.toBlob(async (canvasBlob) => {
+        const adjustedQuality = Math.max(90, quality); 
+        const finalBlob = await fromBlob(canvasBlob, adjustedQuality, 'auto', 'auto', 'png');
+        resolve(finalBlob);
+      }, 'image/png');
+    });
+  };
+
+  /**
+   * Comprime una imagen AVIF con configuración optimizada
+   * @param {Blob} blob - Blob de la imagen original
+   * @param {number} quality - Calidad de compresión (1-100)
+   * @returns {Promise<Blob>} Blob de la imagen comprimida
+   */
+  const compressAVIF = async (blob, quality) => {
+    const img = await blobToImage(blob);
+    
+    const width = Math.floor(img.width / 16) * 16;
+    const height = Math.floor(img.height / 16) * 16;
+    
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    
+    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+    tempCtx.imageSmoothingEnabled = true;
+    tempCtx.imageSmoothingQuality = 'high';
+    tempCtx.drawImage(img, 0, 0, width, height);
+    
+    const imageData = tempCtx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    
+    const strength = 2; 
+    for (let i = 0; i < data.length; i += 4) {
+      if (i % 16 === 0) { 
+        data[i] = Math.round(data[i] / strength) * strength;     
+        data[i+1] = Math.round(data[i+1] / strength) * strength; 
+        data[i+2] = Math.round(data[i+2] / strength) * strength; 
+      }
+    }
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    
+    const ctx = canvas.getContext('2d', { alpha: true });
+    ctx.putImageData(imageData, 0, 0);
+    
+    const adjustedQuality = Math.max(quality * 0.6, 40); 
+    
+    return new Promise((resolve) => {
+      canvas.toBlob(async (canvasBlob) => {
+        const finalBlob = await fromBlob(canvasBlob, adjustedQuality, 'auto', 'auto', 'avif');
+        resolve(finalBlob);
+      }, 'image/png'); 
+    });
+  };
+
+  /**
+   * Comprime una imagen WebP con configuración optimizada
+   * @param {Blob} blob - Blob de la imagen original
+   * @param {number} quality - Calidad de compresión (1-100)
+   * @returns {Promise<Blob>} Blob de la imagen comprimida
+   */
+  const compressWebP = async (blob, quality) => {
+    const adjustedQuality = Math.max(quality * 0.8, 65); 
+    return fromBlob(blob, adjustedQuality, 'auto', 'auto', 'webp');
+  };
+
+  /**
+   * Comprime una imagen JPEG con configuración optimizada
+   * @param {Blob} blob - Blob de la imagen original
+   * @param {number} quality - Calidad de compresión (1-100)
+   * @returns {Promise<Blob>} Blob de la imagen comprimida
+   */
+  const compressJPEG = async (blob, quality) => {
+    const img = await blobToImage(blob);
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0);
+    
+    const adjustedQuality = Math.max(quality * 0.8, 70); 
+    
+    return new Promise((resolve) => {
+      canvas.toBlob(async (canvasBlob) => {
+        const finalBlob = await fromBlob(canvasBlob, adjustedQuality, 'auto', 'auto', 'jpeg');
+        resolve(finalBlob);
+      }, 'image/jpeg', 0.95); 
+    });
+  };
+
+  /**
+   * Comprime una imagen JXL (JPEG XL) o usa WebP como fallback
+   * @param {Blob} blob - Blob de la imagen original
+   * @param {number} quality - Calidad de compresión (1-100)
+   * @returns {Promise<Blob>} Blob de la imagen comprimida
+   */
+  const compressJXL = async (blob, quality) => {
+    try {
+      const webpBlob = await compressWebP(blob, Math.max(quality, 85));
+      
+      if ('image/jxl' in navigator.mimeTypes) {
+        return fromBlob(webpBlob, quality, 'auto', 'auto', 'jxl');
+      } else {
+        return new Blob([webpBlob], { type: 'image/jxl' });
+      }
+    } catch (error) {
+      console.warn('Error al comprimir como JXL, usando WebP como fallback:', error);
+      const webpBlob = await compressWebP(blob, Math.max(quality, 85));
+      return new Blob([webpBlob], { type: 'image/jxl' });
+    }
+  };
+
+  /**
+   * Convierte un Blob a una imagen
+   * @param {Blob} blob - Blob a convertir
+   * @returns {Promise<HTMLImageElement>} Elemento de imagen
+   */
+  const blobToImage = (blob) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Error al cargar la imagen desde blob'));
+      img.src = URL.createObjectURL(blob);
+    });
   };
 
   /**
@@ -131,16 +297,14 @@ export function useImageProcessor() {
         throw new Error('La imagen no está comprimida');
       }
 
-      // Obtener la extensión de archivo según el tipo MIME
       const ext = MIME_TO_EXTENSION[image.compressedType] || '.png';
       const fileName = image.name.split('.')[0] + '-compressed' + ext;
 
-      // Convertir base64 a blob para descargar
       const blob = base64ToBlob(image.compressedSrc, image.compressedType);
       saveAs(blob, fileName);
     } catch (error) {
       console.error('Error al descargar la imagen:', error);
-      throw error; // Re-lanzar para manejarlo en el componente
+      throw error; 
     }
   };
 
@@ -150,40 +314,33 @@ export function useImageProcessor() {
    */
   const downloadAllImages = async images => {
     try {
-      // Filtrar solo imágenes comprimidas
       const compressedImages = images.filter(img => img.isCompressed);
 
       if (compressedImages.length === 0) {
         throw new Error('No hay imágenes comprimidas para descargar');
       }
 
-      // Si solo hay una imagen, descargarla directamente
       if (compressedImages.length === 1) {
         downloadSingleImage(compressedImages[0]);
         return;
       }
 
-      // Preparar el archivo ZIP
       const zip = new JSZip();
 
-      // Agregar cada imagen al ZIP con su formato correcto
       compressedImages.forEach((image, index) => {
         const ext = MIME_TO_EXTENSION[image.compressedType] || '.png';
         const fileName = `${index + 1}_${image.name.split('.')[0]}${ext}`;
 
-        // Obtener los datos binarios de la imagen comprimida
         const base64Data = image.compressedSrc.split(',')[1];
         zip.file(fileName, base64Data, { base64: true });
       });
 
-      // Generar el archivo ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' });
 
-      // Descargar el archivo ZIP
       saveAs(zipBlob, 'imagenes_comprimidas.zip');
     } catch (error) {
       console.error('Error al descargar todas las imágenes:', error);
-      throw error; // Re-lanzar para manejarlo en el componente
+      throw error; 
     }
   };
 
