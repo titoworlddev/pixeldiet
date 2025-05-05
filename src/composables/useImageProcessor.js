@@ -17,15 +17,19 @@ export function useImageProcessor() {
    */
   const compressImage = async (image, format, quality) => {
     try {
-      console.log(`Comprimiendo imagen: ${image.name}, formato: ${format}, calidad: ${quality}%`);
+      console.log(
+        `Comprimiendo imagen: ${image.name}, formato: ${format}, calidad: ${quality}%`
+      );
       console.log(`Tamaño original: ${image.originalSize} bytes`);
 
       // Verificar si estamos cambiando de formato
       const changingFormat = image.type !== format;
-      console.log(`Cambiando formato: ${changingFormat} (${image.type} -> ${format})`);
+      console.log(
+        `Cambiando formato: ${changingFormat} (${image.type} -> ${format})`
+      );
 
       // Para imágenes pequeñas sin cambio de formato, mantener original
-      if (!changingFormat && image.originalSize < 10000) { 
+      if (!changingFormat && image.originalSize < 10000) {
         console.log('Imagen muy pequeña detectada - manteniendo original');
         return {
           compressedSrc: image.src,
@@ -36,13 +40,13 @@ export function useImageProcessor() {
 
       // Convertir base64 a blob para procesar
       const blob = base64ToBlob(image.src, image.type);
-      
+
       // Extraer el formato de salida del MIME type
       const outputFormat = format.split('/')[1];
-      
+
       // Comprimir según el formato específico
       let compressedBlob;
-      
+
       switch (outputFormat) {
         case 'png':
           compressedBlob = await compressPNG(blob, quality);
@@ -61,13 +65,22 @@ export function useImageProcessor() {
           format = 'image/jxl';
           break;
         default:
-          compressedBlob = await fromBlob(blob, quality, 'auto', 'auto', outputFormat);
+          compressedBlob = await fromBlob(
+            blob,
+            quality,
+            'auto',
+            'auto',
+            outputFormat
+          );
       }
-      
+
       console.log(`Tamaño comprimido: ${compressedBlob.size} bytes`);
-      const reduction = (((image.originalSize - compressedBlob.size) / image.originalSize) * 100).toFixed(2);
+      const reduction = (
+        ((image.originalSize - compressedBlob.size) / image.originalSize) *
+        100
+      ).toFixed(2);
       console.log(`Reducción: ${reduction}%`);
-      
+
       // Si la compresión aumenta el tamaño y no cambiamos formato, usar original
       if (compressedBlob.size > image.originalSize && !changingFormat) {
         console.log('La compresión aumentó el tamaño. Manteniendo original.');
@@ -77,10 +90,10 @@ export function useImageProcessor() {
           compressedType: image.type
         };
       }
-      
+
       // Convertir blob a base64 para almacenar
       const base64Data = await blobToBase64(compressedBlob);
-      
+
       console.log('Compresión completada exitosamente.');
       return {
         compressedSrc: base64Data,
@@ -89,7 +102,7 @@ export function useImageProcessor() {
       };
     } catch (error) {
       console.error('Error en proceso de compresión:', error);
-      
+
       // En caso de error, devolver la imagen original
       return {
         compressedSrc: image.src,
@@ -100,29 +113,35 @@ export function useImageProcessor() {
   };
 
   /**
-   * Comprime una imagen PNG con configuración optimizada
+   * Comprime una imagen JXL (JPEG XL) con configuración optimizada
    * @param {Blob} blob - Blob de la imagen original
    * @param {number} quality - Calidad de compresión (1-100)
    * @returns {Promise<Blob>} Blob de la imagen comprimida
    */
-  const compressPNG = async (blob, quality) => {
+  const compressJXL = async (blob, quality) => {
     const img = await blobToImage(blob);
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;
-    
+
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0);
-    
-    return new Promise((resolve) => {
-      canvas.toBlob(async (canvasBlob) => {
-        const adjustedQuality = Math.max(90, quality); 
-        const finalBlob = await fromBlob(canvasBlob, adjustedQuality, 'auto', 'auto', 'png');
+
+    return new Promise(resolve => {
+      canvas.toBlob(async canvasBlob => {
+        const adjustedQuality = Math.max(90, quality);
+        const finalBlob = await fromBlob(
+          canvasBlob,
+          adjustedQuality,
+          'auto',
+          'auto',
+          'png'
+        );
         resolve(finalBlob);
       }, 'image/png');
     });
@@ -136,45 +155,51 @@ export function useImageProcessor() {
    */
   const compressAVIF = async (blob, quality) => {
     const img = await blobToImage(blob);
-    
+
     const width = Math.floor(img.width / 16) * 16;
     const height = Math.floor(img.height / 16) * 16;
-    
+
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-    
+
     const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
     tempCtx.imageSmoothingEnabled = true;
     tempCtx.imageSmoothingQuality = 'high';
     tempCtx.drawImage(img, 0, 0, width, height);
-    
+
     const imageData = tempCtx.getImageData(0, 0, width, height);
     const data = imageData.data;
-    
-    const strength = 2; 
+
+    const strength = 2;
     for (let i = 0; i < data.length; i += 4) {
-      if (i % 16 === 0) { 
-        data[i] = Math.round(data[i] / strength) * strength;     
-        data[i+1] = Math.round(data[i+1] / strength) * strength; 
-        data[i+2] = Math.round(data[i+2] / strength) * strength; 
+      if (i % 16 === 0) {
+        data[i] = Math.round(data[i] / strength) * strength;
+        data[i + 1] = Math.round(data[i + 1] / strength) * strength;
+        data[i + 2] = Math.round(data[i + 2] / strength) * strength;
       }
     }
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
-    
+
     const ctx = canvas.getContext('2d', { alpha: true });
     ctx.putImageData(imageData, 0, 0);
-    
-    const adjustedQuality = Math.max(quality * 0.6, 40); 
-    
-    return new Promise((resolve) => {
-      canvas.toBlob(async (canvasBlob) => {
-        const finalBlob = await fromBlob(canvasBlob, adjustedQuality, 'auto', 'auto', 'avif');
+
+    const adjustedQuality = Math.max(quality * 0.6, 40);
+
+    return new Promise(resolve => {
+      canvas.toBlob(async canvasBlob => {
+        const finalBlob = await fromBlob(
+          canvasBlob,
+          adjustedQuality,
+          'auto',
+          'auto',
+          'avif'
+        );
         resolve(finalBlob);
-      }, 'image/png'); 
+      }, 'image/png');
     });
   };
 
@@ -185,7 +210,7 @@ export function useImageProcessor() {
    * @returns {Promise<Blob>} Blob de la imagen comprimida
    */
   const compressWebP = async (blob, quality) => {
-    const adjustedQuality = Math.max(quality * 0.8, 65); 
+    const adjustedQuality = Math.max(quality * 0.8, 65);
     return fromBlob(blob, adjustedQuality, 'auto', 'auto', 'webp');
   };
 
@@ -197,45 +222,58 @@ export function useImageProcessor() {
    */
   const compressJPEG = async (blob, quality) => {
     const img = await blobToImage(blob);
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;
-    
+
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0);
-    
-    const adjustedQuality = Math.max(quality * 0.8, 70); 
-    
-    return new Promise((resolve) => {
-      canvas.toBlob(async (canvasBlob) => {
-        const finalBlob = await fromBlob(canvasBlob, adjustedQuality, 'auto', 'auto', 'jpeg');
-        resolve(finalBlob);
-      }, 'image/jpeg', 0.95); 
+
+    const adjustedQuality = Math.max(quality * 0.8, 70);
+
+    return new Promise(resolve => {
+      canvas.toBlob(
+        async canvasBlob => {
+          const finalBlob = await fromBlob(
+            canvasBlob,
+            adjustedQuality,
+            'auto',
+            'auto',
+            'jpeg'
+          );
+          resolve(finalBlob);
+        },
+        'image/jpeg',
+        0.95
+      );
     });
   };
 
   /**
-   * Comprime una imagen JXL (JPEG XL) o usa WebP como fallback
+   * Comprime una imagen PNG o usa WebP como fallback
    * @param {Blob} blob - Blob de la imagen original
    * @param {number} quality - Calidad de compresión (1-100)
    * @returns {Promise<Blob>} Blob de la imagen comprimida
    */
-  const compressJXL = async (blob, quality) => {
+  const compressPNG = async (blob, quality) => {
     try {
       const webpBlob = await compressWebP(blob, Math.max(quality, 85));
-      
+
       if ('image/jxl' in navigator.mimeTypes) {
         return fromBlob(webpBlob, quality, 'auto', 'auto', 'jxl');
       } else {
         return new Blob([webpBlob], { type: 'image/jxl' });
       }
     } catch (error) {
-      console.warn('Error al comprimir como JXL, usando WebP como fallback:', error);
+      console.warn(
+        'Error al comprimir como JXL, usando WebP como fallback:',
+        error
+      );
       const webpBlob = await compressWebP(blob, Math.max(quality, 85));
       return new Blob([webpBlob], { type: 'image/jxl' });
     }
@@ -246,11 +284,12 @@ export function useImageProcessor() {
    * @param {Blob} blob - Blob a convertir
    * @returns {Promise<HTMLImageElement>} Elemento de imagen
    */
-  const blobToImage = (blob) => {
+  const blobToImage = blob => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error('Error al cargar la imagen desde blob'));
+      img.onerror = () =>
+        reject(new Error('Error al cargar la imagen desde blob'));
       img.src = URL.createObjectURL(blob);
     });
   };
@@ -304,7 +343,7 @@ export function useImageProcessor() {
       saveAs(blob, fileName);
     } catch (error) {
       console.error('Error al descargar la imagen:', error);
-      throw error; 
+      throw error;
     }
   };
 
@@ -340,7 +379,7 @@ export function useImageProcessor() {
       saveAs(zipBlob, 'imagenes_comprimidas.zip');
     } catch (error) {
       console.error('Error al descargar todas las imágenes:', error);
-      throw error; 
+      throw error;
     }
   };
 
