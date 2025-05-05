@@ -1,3 +1,4 @@
+import imageCompression from 'browser-image-compression';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { MIME_TO_EXTENSION } from '../utils';
@@ -215,43 +216,66 @@ export function useImageProcessor() {
   };
 
   /**
-   * Comprime una imagen JPEG con configuración optimizada
+   * Comprime una imagen JPEG con configuración optimizada usando browser-image-compression
    * @param {Blob} blob - Blob de la imagen original
    * @param {number} quality - Calidad de compresión (1-100)
    * @returns {Promise<Blob>} Blob de la imagen comprimida
    */
   const compressJPEG = async (blob, quality) => {
-    const img = await blobToImage(blob);
+    try {
+      // Configuración para browser-image-compression
+      const options = {
+        maxSizeMB: 10, // Tamaño máximo en MB (valor alto para que no limite)
+        maxWidthOrHeight: 4096, // Mantener resolución alta
+        useWebWorker: true, // Usar web worker para no bloquear UI
+        fileType: 'image/jpeg',
+        initialQuality: quality / 100, // Convertir de escala 1-100 a 0-1
+        alwaysKeepResolution: true, // Mantener la resolución original
+        preserveExif: false, // No preservar datos EXIF para reducir tamaño
+        exifOrientation: 1, // Orientación por defecto
+        onProgress: () => {} // Función vacía para progreso
+      };
 
-    const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
+      // Usar browser-image-compression para la compresión
+      const compressedFile = await imageCompression(new File([blob], 'image.jpg', { type: 'image/jpeg' }), options);
+      
+      // Convertir el archivo comprimido a blob
+      return new Blob([await compressedFile.arrayBuffer()], { type: 'image/jpeg' });
+    } catch (error) {
+      console.warn('Error en compresión JPEG optimizada, usando método estándar:', error);
+      // Fallback al método anterior si hay error
+      const img = await blobToImage(blob);
 
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, 0, 0);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
 
-    const adjustedQuality = Math.max(quality * 0.8, 70);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0);
 
-    return new Promise(resolve => {
-      canvas.toBlob(
-        async canvasBlob => {
-          const finalBlob = await fromBlob(
-            canvasBlob,
-            adjustedQuality,
-            'auto',
-            'auto',
-            'jpeg'
-          );
-          resolve(finalBlob);
-        },
-        'image/jpeg',
-        0.95
-      );
-    });
+      const adjustedQuality = Math.max(quality * 0.8, 70);
+
+      return new Promise(resolve => {
+        canvas.toBlob(
+          async canvasBlob => {
+            const finalBlob = await fromBlob(
+              canvasBlob,
+              adjustedQuality,
+              'auto',
+              'auto',
+              'jpeg'
+            );
+            resolve(finalBlob);
+          },
+          'image/jpeg',
+          0.95
+        );
+      });
+    }
   };
 
   /**
