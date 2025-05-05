@@ -19,7 +19,8 @@ export const MIME_TO_EXTENSION = {
   'image/png': '.png',
   'image/jpeg': '.jpg',
   'image/webp': '.webp',
-  'image/avif': '.avif'
+  'image/avif': '.avif',
+  'image/jxl': '.jxl'
 };
 
 /**

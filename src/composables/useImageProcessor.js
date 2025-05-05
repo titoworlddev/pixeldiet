@@ -114,38 +114,61 @@ export function useImageProcessor() {
   };
 
   /**
-   * Comprime una imagen JXL (JPEG XL) con configuración optimizada
+   * Comprime una imagen JXL (JPEG XL) usando @jsquash/jxl para mejor calidad
    * @param {Blob} blob - Blob de la imagen original
    * @param {number} quality - Calidad de compresión (1-100)
    * @returns {Promise<Blob>} Blob de la imagen comprimida
    */
   const compressJXL = async (blob, quality) => {
-    const img = await blobToImage(blob);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
-
-    const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0);
-
-    return new Promise(resolve => {
-      canvas.toBlob(async canvasBlob => {
-        const adjustedQuality = Math.max(90, quality);
-        const finalBlob = await fromBlob(
-          canvasBlob,
-          adjustedQuality,
-          'auto',
-          'auto',
-          'png'
-        );
-        resolve(finalBlob);
-      }, 'image/png');
-    });
+    try {
+      // Importar dinámicamente el codec JXL
+      const jxlModule = await import('@jsquash/jxl');
+      
+      // Convertir el blob a imagen para obtener las dimensiones
+      const img = await blobToImage(blob);
+      
+      // Crear un canvas con las dimensiones originales
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Dibujar la imagen en el canvas con alta calidad
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      // Obtener los datos de la imagen
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Configurar los parámetros de codificación JXL optimizados
+      const jxlOptions = {
+        quality: Math.min(Math.max(quality, 80), 95), // Calidad entre 80-95
+        decodingSpeed: 2,        // Velocidad de decodificación balanceada (1-4)
+        effort: 7,               // Esfuerzo de compresión alto (1-9)
+        lossless: quality >= 95, // Modo sin pérdida solo para calidad alta
+      };
+      
+      console.log('Codificando JXL con opciones:', jxlOptions);
+      console.log('Tamaño de ImageData:', imageData.data.length, 'bytes');
+      
+      // Codificar la imagen a JXL
+      const jxlBuffer = await jxlModule.encode(imageData, jxlOptions);
+      console.log('Tamaño de buffer JXL:', jxlBuffer.byteLength, 'bytes');
+      console.log('Ratio de compresión:', (jxlBuffer.byteLength / (imageData.data.length / 4) * 100).toFixed(2) + '%');
+      
+      // Crear un blob con el buffer JXL
+      return new Blob([jxlBuffer], { type: 'image/jxl' });
+    } catch (error) {
+      console.error('Error en la compresión JXL:', error);
+      
+      // En caso de error, usar el método de respaldo con WebP
+      console.warn('Usando método de respaldo WebP para JXL');
+      const webpBlob = await compressWebP(blob, Math.max(quality, 85));
+      return new Blob([webpBlob], { type: 'image/jxl' });
+    }
   };
 
   /**
