@@ -14,6 +14,7 @@ PixelDiet es una aplicación web que permite comprimir y convertir imágenes a v
 - Descarga individual de imágenes
 - Descarga masiva en formato ZIP
 - Visualización de estadísticas de compresión
+- Diseño totalmente responsive adaptado a todos los dispositivos
 
 ## Tecnologías utilizadas
 
@@ -51,6 +52,7 @@ pixeldiet/
 │   ├── assets/           # Recursos estáticos (imágenes, fuentes, etc.)
 │   ├── components/       # Componentes Vue
 │   ├── composables/      # Funciones reutilizables con lógica compartida
+│   ├── utils/             # Utilidades y constantes
 │   ├── App.vue           # Componente principal
 │   ├── main.js           # Punto de entrada de la aplicación
 │   └── style.css         # Estilos globales
@@ -58,6 +60,17 @@ pixeldiet/
 ├── package.json          # Dependencias y scripts
 └── vite.config.js        # Configuración de Vite
 ```
+
+## Funcionalidades destacadas
+
+### Compresión inteligente
+PixelDiet utiliza algoritmos optimizados para cada formato de imagen, garantizando el mejor equilibrio entre calidad y tamaño del archivo.
+
+### Interfaz adaptativa
+La aplicación está diseñada para funcionar en cualquier dispositivo, desde móviles hasta pantallas de escritorio grandes.
+
+### Vista previa en tiempo real
+Los usuarios pueden ver el resultado de la compresión inmediatamente, con estadísticas claras del porcentaje de reducción de tamaño.
 
 ## Documentación
 

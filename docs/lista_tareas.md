@@ -11,12 +11,14 @@
 ## Fase 2: Estructura de Componentes
 
 - [x] Crear componente ImageUploader
+
   - [x] Implementar interfaz drag & drop
   - [x] Manejar validación de archivos
   - [x] Procesar metadatos de imágenes
   - [x] Manejar el límite de 40 imágenes
 
 - [x] Crear componente ImageList
+
   - [x] Visualización de miniaturas de imágenes
   - [x] Implementar controles de compresión
   - [x] Mostrar estadísticas de compresión
@@ -30,32 +32,36 @@
 
 ## Fase 3: Implementación de Funcionalidades
 
-- [ ] Funcionalidad de subida de imágenes
+- [x] Funcionalidad de subida de imágenes
+
   - [x] Visualización previa
   - [x] Validación de tipos
-  - [ ] Manejo de errores
+  - [x] Manejo de errores
 
-- [ ] Funcionalidad de compresión
+- [x] Funcionalidad de compresión
+
   - [x] Compresión automática al subir
   - [x] Cambio de formato
   - [x] Ajuste de calidad
-  - [ ] Optimización de algoritmos de compresión
+  - [x] Optimización de algoritmos de compresión
 
-- [ ] Funcionalidad de descarga
+- [x] Funcionalidad de descarga
   - [x] Descarga individual
   - [x] Descarga masiva en ZIP
-  - [ ] Conservación de nombres de archivo originales
+  - [x] Conservación de nombres de archivo originales
 
 ## Fase 4: Interfaz de Usuario
 
 - [x] Diseño general de la aplicación
+
   - [x] Header y footer
   - [x] Layout responsive
 
 - [ ] Mejoras de UX
+
   - [ ] Animaciones y transiciones
-  - [ ] Indicadores de carga
-  - [ ] Mensajes informativos
+  - [x] Indicadores de carga
+  - [x] Mensajes informativos
 
 - [ ] Temas y personalización
   - [ ] Tema claro/oscuro
@@ -66,7 +72,6 @@
 - [ ] Optimización de rendimiento
   - [ ] Lazy loading de componentes
   - [ ] Optimización de procesamiento de imágenes
-  
 - [ ] Pruebas
   - [ ] Pruebas unitarias
   - [ ] Pruebas de integración
@@ -75,11 +80,12 @@
 ## Fase 6: Documentación y Despliegue
 
 - [x] Documentación técnica
+
   - [x] Análisis funcional
   - [x] Análisis técnico
   - [x] Lista de tareas
-  
-- [ ] Preparación para producción
-  - [ ] Optimización de build
-  - [ ] Configuración de entorno de producción
-  - [ ] Despliegue
+
+- [x] Preparación para producción
+  - [x] Optimización de build
+  - [x] Configuración de entorno de producción
+  - [x] Despliegue
