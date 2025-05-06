@@ -511,7 +511,7 @@
 
             <!-- Información de la imagen (debajo) -->
             <div class="flex-grow">
-              <p class="truncate text-sm font-medium">
+              <p class="truncate text-sm text-start font-medium">
                 {{ image.name }}
                 <span
                   v-if="
@@ -526,10 +526,10 @@
                   }}
                 </span>
               </p>
-              <div class="flex flex-wrap items-center text-xs space-x-2 mt-1">
+              <div class="flex flex-wrap items-center text-xs mt-1">
                 <span>{{ formatBytes(image.originalSize) }}</span>
                 <span v-if="image.isCompressed" class="flex items-center">
-                  <span class="pi pi-arrow-right text-xs mx-1"></span>
+                  <span class="pi pi-arrow-right text-xs mx-2"></span>
                   {{ formatBytes(image.compressedSize) }}
                   <span
                     :class="{
@@ -556,9 +556,14 @@
                   v-if="image.isCompressed"
                   severity="success"
                   value="Completado"
-                  class="ml-1"
+                  class="ml-auto"
                 />
-                <Badge v-else severity="info" value="Pendiente" class="ml-1" />
+                <Badge
+                  v-else
+                  severity="info"
+                  value="Pendiente"
+                  class="ml-auto"
+                />
               </div>
             </div>
           </div>
@@ -576,7 +581,7 @@
             <!-- Información de nombre (centro) -->
             <div class="flex-grow min-w-0">
               <div
-                class="flex flex-col mb-1"
+                class="flex flex-col mb-1 text-start"
                 :title="`${image.name} →
                   ${
                     image.name.split('.')[0] +
@@ -599,10 +604,10 @@
                   }}
                 </span>
               </div>
-              <div class="flex flex-wrap items-center text-xs space-x-2">
+              <div class="flex flex-wrap items-center text-xs">
                 <span>{{ formatBytes(image.originalSize) }}</span>
                 <span v-if="image.isCompressed" class="flex items-center">
-                  <span class="pi pi-arrow-right text-xs mx-1"></span>
+                  <span class="pi pi-arrow-right text-xs mx-2"></span>
                   {{ formatBytes(image.compressedSize) }}
                   <span
                     :class="{
@@ -629,9 +634,9 @@
                   v-if="image.isCompressed"
                   severity="success"
                   value="Completado"
-                  class="ml-1"
+                  class="ml-3"
                 />
-                <Badge v-else severity="info" value="Pendiente" class="ml-1" />
+                <Badge v-else severity="info" value="Pendiente" class="ml-3" />
               </div>
             </div>
 
