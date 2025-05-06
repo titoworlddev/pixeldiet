@@ -328,8 +328,8 @@
   <main class="min-h-screen max-w-4xl mx-auto p-4 flex flex-col gap-4">
     <!-- Cabecera -->
     <div class="text-center mb-4">
-      <div class="flex items-center justify-center mb-1">
-        <span class="pi pi-image text-xl mr-2 text-blue-500"></span>
+      <div class="flex justify-center items-end mb-2">
+        <img src="/logo.svg" alt="Logo" class="size-10 mr-2" />
         <h1 class="text-2xl font-bold">PixelDiet</h1>
       </div>
       <p class="text-sm text-gray-600">
