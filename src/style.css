@@ -110,6 +110,11 @@ a:hover {
   color: inherit !important;
 }
 
+.custom-toast {
+  width: 90%;
+  max-width: 320px;
+}
+
 /* Estilos más específicos para el icono de cierre */
 .custom-toast .p-toast-message .p-toast-icon-close {
   color: #000000 !important; /* Negro para máximo contraste */
@@ -118,6 +123,7 @@ a:hover {
   background-color: transparent !important;
   visibility: visible !important; /* Forzar visibilidad */
   display: block !important; /* Asegurar que se muestre */
+  padding-block: 0;
 }
 
 .custom-toast .p-toast-message .p-toast-icon-close:hover {
