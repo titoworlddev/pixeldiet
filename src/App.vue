@@ -557,8 +557,7 @@
     <!-- Footer -->
     <footer class="mt-auto text-center text-xs text-gray-500">
       <p>
-        PixelDiet v1.0.0 | Comprime y convierte imágenes directamente en tu
-        navegador
+        PixelDiet | Comprime y convierte imágenes directamente en tu navegador
       </p>
     </footer>
   </main>
