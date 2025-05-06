@@ -353,10 +353,10 @@
             v-for="format in formatOptions"
             :key="format.value"
             :class="[
-              'rounded py-2 px-2 text-sm font-medium transition-colors outline-none',
+              'rounded-lg py-[10px] px-2 text-sm font-medium transition-colors outline-none',
               selectedFormat === format.value
                 ? 'bg-[#4f46e5] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
             ]"
             @click="handleFormatChange(format.value)"
           >
@@ -478,7 +478,11 @@
                 v-if="image.isCompressed && image.compressedType !== image.type"
                 class="text-xs text-blue-500"
               >
-                → {{ image.name.split('.')[0] + (MIME_TO_EXTENSION[image.compressedType] || '.png') }}
+                →
+                {{
+                  image.name.split('.')[0] +
+                  (MIME_TO_EXTENSION[image.compressedType] || '.png')
+                }}
               </span>
             </p>
             <div class="flex items-center text-xs space-x-2">
