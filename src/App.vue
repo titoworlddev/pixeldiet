@@ -477,78 +477,180 @@
         <div
           v-for="image in images"
           :key="image.id"
-          class="border-b last:border-b-0 p-3 flex items-center"
+          class="border-b last:border-b-0 p-3"
         >
-          <img
-            :src="image.isCompressed ? image.compressedSrc : image.src"
-            class="w-16 h-16 object-cover rounded mr-3"
-            :alt="image.name"
-          />
-
-          <div class="flex-grow min-w-0">
-            <p class="truncate text-sm font-medium">
-              {{ image.name }}
-              <span
-                v-if="image.isCompressed && image.compressedType !== image.type"
-                class="text-xs text-blue-500"
-              >
-                →
-                {{
-                  image.name.split('.')[0] +
-                  (MIME_TO_EXTENSION[image.compressedType] || '.png')
-                }}
-              </span>
-            </p>
-            <div class="flex items-center text-xs space-x-2">
-              <span>{{ formatBytes(image.originalSize) }}</span>
-              <span v-if="image.isCompressed" class="flex items-center">
-                <span class="pi pi-arrow-right text-xs mx-1"></span>
-                {{ formatBytes(image.compressedSize) }}
-                <span
-                  :class="{
-                    'text-green-600': !calculateReduction(
-                      image.originalSize,
-                      image.compressedSize
-                    ).includes('+'),
-                    'text-red-600': calculateReduction(
-                      image.originalSize,
-                      image.compressedSize
-                    ).includes('+')
-                  }"
-                  class="ml-1"
-                >
-                  ({{
-                    calculateReduction(
-                      image.originalSize,
-                      image.compressedSize
-                    )
-                  }})
-                </span>
-              </span>
-              <Badge
-                v-if="image.isCompressed"
-                severity="success"
-                value="Completado"
-                class="ml-1"
+          <!-- Diseño Móvil (por defecto) y Desktop (responsivo) -->
+          <div class="md:hidden">
+            <!-- Solo visible en móvil -->
+            <!-- Contenedor superior para imagen y botones (en fila) -->
+            <div class="flex items-center justify-between mb-2">
+              <!-- Imagen miniatura -->
+              <img
+                :src="image.isCompressed ? image.compressedSrc : image.src"
+                class="w-16 h-16 object-cover rounded"
+                :alt="image.name"
               />
-              <Badge v-else severity="info" value="Pendiente" class="ml-1" />
+
+              <!-- Botones de acción -->
+              <div class="flex space-x-2">
+                <Button
+                  v-if="image.isCompressed"
+                  @click="handleDownloadSingle(image)"
+                  icon="pi pi-download"
+                  class="p-button-text p-button-rounded p-button-sm"
+                  v-tooltip.top="'Descargar imagen'"
+                />
+                <Button
+                  @click="removeImage(image.id)"
+                  icon="pi pi-times"
+                  class="p-button-text p-button-rounded p-button-sm p-button-danger"
+                  v-tooltip.top="'Eliminar imagen'"
+                />
+              </div>
+            </div>
+
+            <!-- Información de la imagen (debajo) -->
+            <div class="flex-grow">
+              <p class="truncate text-sm font-medium">
+                {{ image.name }}
+                <span
+                  v-if="
+                    image.isCompressed && image.compressedType !== image.type
+                  "
+                  class="text-xs text-blue-500 block"
+                >
+                  →
+                  {{
+                    image.name.split('.')[0] +
+                    (MIME_TO_EXTENSION[image.compressedType] || '.png')
+                  }}
+                </span>
+              </p>
+              <div class="flex flex-wrap items-center text-xs space-x-2 mt-1">
+                <span>{{ formatBytes(image.originalSize) }}</span>
+                <span v-if="image.isCompressed" class="flex items-center">
+                  <span class="pi pi-arrow-right text-xs mx-1"></span>
+                  {{ formatBytes(image.compressedSize) }}
+                  <span
+                    :class="{
+                      'text-green-600': !calculateReduction(
+                        image.originalSize,
+                        image.compressedSize
+                      ).includes('+'),
+                      'text-red-600': calculateReduction(
+                        image.originalSize,
+                        image.compressedSize
+                      ).includes('+')
+                    }"
+                    class="ml-1"
+                  >
+                    ({{
+                      calculateReduction(
+                        image.originalSize,
+                        image.compressedSize
+                      )
+                    }})
+                  </span>
+                </span>
+                <Badge
+                  v-if="image.isCompressed"
+                  severity="success"
+                  value="Completado"
+                  class="ml-1"
+                />
+                <Badge v-else severity="info" value="Pendiente" class="ml-1" />
+              </div>
             </div>
           </div>
 
-          <div class="flex space-x-2 ml-2">
-            <Button
-              v-if="image.isCompressed"
-              @click="handleDownloadSingle(image)"
-              icon="pi pi-download"
-              class="p-button-text p-button-rounded p-button-sm"
-              v-tooltip.top="'Descargar imagen'"
+          <!-- Diseño Desktop (tres columnas) -->
+          <div class="hidden md:flex md:items-center md:space-x-3">
+            <!-- Solo visible en desktop -->
+            <!-- Imagen miniatura (izquierda) -->
+            <img
+              :src="image.isCompressed ? image.compressedSrc : image.src"
+              class="w-16 h-16 object-cover rounded"
+              :alt="image.name"
             />
-            <Button
-              @click="removeImage(image.id)"
-              icon="pi pi-times"
-              class="p-button-text p-button-rounded p-button-sm p-button-danger"
-              v-tooltip.top="'Eliminar imagen'"
-            />
+
+            <!-- Información de nombre (centro) -->
+            <div class="flex-grow min-w-0">
+              <div
+                class="flex flex-col mb-1"
+                :title="`${image.name} →
+                  ${
+                    image.name.split('.')[0] +
+                    (MIME_TO_EXTENSION[image.compressedType] || '.png')
+                  }`"
+              >
+                <p class="truncate text-sm font-medium">
+                  {{ image.name }}
+                </p>
+                <span
+                  v-if="
+                    image.isCompressed && image.compressedType !== image.type
+                  "
+                  class="truncate text-xs text-blue-500 ml-1"
+                >
+                  →
+                  {{
+                    image.name.split('.')[0] +
+                    (MIME_TO_EXTENSION[image.compressedType] || '.png')
+                  }}
+                </span>
+              </div>
+              <div class="flex flex-wrap items-center text-xs space-x-2">
+                <span>{{ formatBytes(image.originalSize) }}</span>
+                <span v-if="image.isCompressed" class="flex items-center">
+                  <span class="pi pi-arrow-right text-xs mx-1"></span>
+                  {{ formatBytes(image.compressedSize) }}
+                  <span
+                    :class="{
+                      'text-green-600': !calculateReduction(
+                        image.originalSize,
+                        image.compressedSize
+                      ).includes('+'),
+                      'text-red-600': calculateReduction(
+                        image.originalSize,
+                        image.compressedSize
+                      ).includes('+')
+                    }"
+                    class="ml-1"
+                  >
+                    ({{
+                      calculateReduction(
+                        image.originalSize,
+                        image.compressedSize
+                      )
+                    }})
+                  </span>
+                </span>
+                <Badge
+                  v-if="image.isCompressed"
+                  severity="success"
+                  value="Completado"
+                  class="ml-1"
+                />
+                <Badge v-else severity="info" value="Pendiente" class="ml-1" />
+              </div>
+            </div>
+
+            <!-- Botones de acción (derecha) -->
+            <div class="flex space-x-2">
+              <Button
+                v-if="image.isCompressed"
+                @click="handleDownloadSingle(image)"
+                icon="pi pi-download"
+                class="p-button-text p-button-rounded p-button-sm"
+                v-tooltip.top="'Descargar imagen'"
+              />
+              <Button
+                @click="removeImage(image.id)"
+                icon="pi pi-times"
+                class="p-button-text p-button-rounded p-button-sm p-button-danger"
+                v-tooltip.top="'Eliminar imagen'"
+              />
+            </div>
           </div>
         </div>
       </div>

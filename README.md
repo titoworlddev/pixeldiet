@@ -23,6 +23,7 @@ PixelDiet es una aplicación web que permite comprimir y convertir imágenes a v
 - PrimeVue
 - JSZip
 - FileSaver.js
+- image-resize-compress
 
 ## Instalación
 
