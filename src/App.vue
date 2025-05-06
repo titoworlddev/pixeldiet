@@ -21,18 +21,18 @@
   const isUploading = ref(false);
   const isProcessing = ref(false);
   const downloadingAll = ref(false);
-  const selectedFormat = ref('image/png');
+  const selectedFormat = ref('image/webp'); // Formato de compresión predeterminado
   const compressionQuality = ref(75); // Calidad de compresión predeterminada
   const toast = useToast();
   const fileUploadRef = ref(null);
 
   // Formatos disponibles
   const formatOptions = [
-    { value: 'image/avif', label: 'AVIF' }, // Va mal
-    { value: 'image/jpeg', label: 'JPEG' }, // No esta mal
-    { value: 'image/jxl', label: 'JXL' }, // Va mal
-    { value: 'image/png', label: 'PNG' }, // Va bien
-    { value: 'image/webp', label: 'WEBP' } // Va bien
+    { value: 'image/avif', label: 'AVIF' },
+    { value: 'image/png', label: 'PNG' },
+    { value: 'image/webp', label: 'WEBP' },
+    { value: 'image/jpeg', label: 'JPEG' },
+    { value: 'image/jxl', label: 'JXL' }
   ];
 
   // Composable para procesamiento de imágenes
