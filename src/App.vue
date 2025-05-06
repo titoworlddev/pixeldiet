@@ -440,7 +440,7 @@
 
     <!-- Botones de acción -->
     <div v-if="hasImages" class="mb-6 flex flex-col gap-4">
-      <div class="flex justify-center items-center gap-4">
+      <div class="flex justify-center flex-wrap items-center gap-4">
         <Button
           @click="handleCompressAll"
           :loading="isProcessing"
@@ -448,7 +448,7 @@
             isProcessing ? 'Procesando...' : 'Comprimir todas las imágenes'
           "
           icon="pi pi-images"
-          class="p-button-success flex-1"
+          class="p-button-success w-full sm:w-auto sm:flex-1"
         />
 
         <!-- Botón de limpieza -->
@@ -456,7 +456,7 @@
           @click="clearAll"
           label="Limpiar todo"
           icon="pi pi-trash"
-          class="p-button-outlined p-button-danger flex-2"
+          class="p-button-outlined p-button-danger w-full sm:w-auto sm:flex-2"
         />
       </div>
 
