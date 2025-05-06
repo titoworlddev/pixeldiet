@@ -338,8 +338,56 @@
       </p>
     </div>
 
+    <!-- Área de carga -->
+    <div
+      class="rounded-lg p-5 mb-2 bg-white shadow-md transition-colors duration-200 cursor-pointer"
+      @dragover="onDragOver"
+      @dragleave="onDragLeave"
+      @drop="onDrop"
+      @click="
+        $refs.fileUploadRef &&
+          $refs.fileUploadRef.$el.querySelector('input').click()
+      "
+    >
+      <div class="flex items-center justify-center">
+        <div class="flex flex-col items-center">
+          <span class="pi pi-upload text-3xl text-blue-500 mb-2"></span>
+          <p class="text-sm font-medium mb-0">
+            Arrastra imágenes aquí o haz clic para subir
+          </p>
+
+          <FileUpload
+            ref="fileUploadRef"
+            name="demo[]"
+            :multiple="true"
+            accept="image/*"
+            :auto="true"
+            @select="handleFileUpload"
+            @drop="handleFileUpload"
+            :showUploadButton="false"
+            :showCancelButton="false"
+            class="upload-area w-full"
+          >
+            <template #empty>
+              <Button
+                label="Elegir archivos"
+                class="p-button-primary p-button-sm"
+              />
+            </template>
+          </FileUpload>
+        </div>
+      </div>
+
+      <div v-if="isUploading" class="mt-3">
+        <ProgressBar mode="indeterminate" class="h-1" />
+        <p class="text-center text-xs mt-1">Subiendo imágenes...</p>
+      </div>
+    </div>
+
     <!-- Tarjeta de controles -->
-    <div class="bg-white rounded-lg shadow-md px-4 py-2 flex flex-col gap-4">
+    <div
+      class="bg-white rounded-lg shadow-md px-4 py-2 mb-3 flex flex-col gap-4"
+    >
       <div>
         <h2 class="text-sm font-medium mb-3">Formato de salida</h2>
         <div
@@ -390,61 +438,27 @@
       </div>
     </div>
 
-    <!-- Área de carga -->
-    <div
-      class="rounded-lg p-5 mb-4 bg-white shadow-md transition-colors duration-200 cursor-pointer"
-      @dragover="onDragOver"
-      @dragleave="onDragLeave"
-      @drop="onDrop"
-      @click="
-        $refs.fileUploadRef &&
-          $refs.fileUploadRef.$el.querySelector('input').click()
-      "
-    >
-      <div class="flex items-center justify-center">
-        <div class="flex flex-col items-center">
-          <span class="pi pi-upload text-3xl text-blue-500 mb-2"></span>
-          <p class="text-sm font-medium mb-0">
-            Arrastra imágenes aquí o haz clic para subir
-          </p>
-
-          <FileUpload
-            ref="fileUploadRef"
-            name="demo[]"
-            :multiple="true"
-            accept="image/*"
-            :auto="true"
-            @select="handleFileUpload"
-            @drop="handleFileUpload"
-            :showUploadButton="false"
-            :showCancelButton="false"
-            class="upload-area w-full"
-          >
-            <template #empty>
-              <Button
-                label="Elegir archivos"
-                class="p-button-primary p-button-sm"
-              />
-            </template>
-          </FileUpload>
-        </div>
-      </div>
-
-      <div v-if="isUploading" class="mt-3">
-        <ProgressBar mode="indeterminate" class="h-1" />
-        <p class="text-center text-xs mt-1">Subiendo imágenes...</p>
-      </div>
-    </div>
-
     <!-- Botones de acción -->
-    <div v-if="hasImages" class="mb-6">
-      <Button
-        @click="handleCompressAll"
-        :loading="isProcessing"
-        :label="isProcessing ? 'Procesando...' : 'Comprimir todas las imágenes'"
-        icon="pi pi-images"
-        class="w-full p-button-success mb-2"
-      />
+    <div v-if="hasImages" class="mb-6 flex flex-col gap-4">
+      <div class="flex justify-center items-center gap-4">
+        <Button
+          @click="handleCompressAll"
+          :loading="isProcessing"
+          :label="
+            isProcessing ? 'Procesando...' : 'Comprimir todas las imágenes'
+          "
+          icon="pi pi-images"
+          class="p-button-success flex-1"
+        />
+
+        <!-- Botón de limpieza -->
+        <Button
+          @click="clearAll"
+          label="Limpiar todo"
+          icon="pi pi-trash"
+          class="p-button-outlined p-button-danger flex-2"
+        />
+      </div>
 
       <Button
         v-if="hasCompressedImages"
@@ -538,16 +552,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Botón de limpieza -->
-    <div v-if="hasImages" class="flex justify-center">
-      <Button
-        @click="clearAll"
-        label="Limpiar todo"
-        icon="pi pi-trash"
-        class="p-button-outlined p-button-danger"
-      />
     </div>
 
     <!-- Footer -->
