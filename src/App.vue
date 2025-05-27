@@ -521,7 +521,7 @@
                 >
                   →
                   {{
-                    image.name.split('.')[0] +
+                    image.name.slice(0, image.name.lastIndexOf('.')) +
                     (MIME_TO_EXTENSION[image.compressedType] || '.png')
                   }}
                 </span>
@@ -584,7 +584,7 @@
                 class="flex flex-col mb-1 text-start"
                 :title="`${image.name} →
                   ${
-                    image.name.split('.')[0] +
+                    image.name.slice(0, image.name.lastIndexOf('.')) +
                     (MIME_TO_EXTENSION[image.compressedType] || '.png')
                   }`"
               >
@@ -599,7 +599,7 @@
                 >
                   →
                   {{
-                    image.name.split('.')[0] +
+                    image.name.slice(0, image.name.lastIndexOf('.')) +
                     (MIME_TO_EXTENSION[image.compressedType] || '.png')
                   }}
                 </span>

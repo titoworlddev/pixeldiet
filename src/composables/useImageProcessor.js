@@ -266,7 +266,8 @@ export function useImageProcessor() {
 
       compressedImages.forEach(image => {
         const ext = MIME_TO_EXTENSION[image.compressedType] || '.png';
-        const fileName = `${image.name}${ext}`;
+        const newName = image.name.slice(0, image.name.lastIndexOf('.'));
+        const fileName = `${newName}${ext}`;
 
         const base64Data = image.compressedSrc.split(',')[1];
         zip.file(fileName, base64Data, { base64: true });
