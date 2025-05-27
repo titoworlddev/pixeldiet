@@ -235,7 +235,8 @@ export function useImageProcessor() {
       }
 
       const ext = MIME_TO_EXTENSION[image.compressedType] || '.png';
-      const fileName = image.name.split('.')[0] + ext;
+      const newName = image.name.slice(0, image.name.lastIndexOf('.'));
+      const fileName = `${newName}${ext}`;
 
       const blob = base64ToBlob(image.compressedSrc, image.compressedType);
       saveAs(blob, fileName);
