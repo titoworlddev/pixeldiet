@@ -1,5 +1,9 @@
 # PixelDiet - Compresor de Imágenes
 
+## Vista previa
+
+![PixelDiet Preview](./screenshot.webp)
+
 ## Descripción
 
 PixelDiet es una aplicación web que permite comprimir y convertir imágenes a varios formatos (AVIF, JPEG, WEBP, PNG, JXL) de manera sencilla y eficiente. La aplicación está diseñada para ser intuitiva y fácil de usar, permitiendo a los usuarios optimizar sus imágenes para uso web o compartir en medios digitales.
