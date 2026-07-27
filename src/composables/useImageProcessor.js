@@ -157,24 +157,7 @@ export function useImageProcessor() {
   };
 
   const compressPNG = async (blob, quality) => {
-    try {
-      // Intentar comprimir con WebP primero
-      const webpBlob = await compressWebP(blob, quality);
-
-      // Si WebP es más grande que el PNG original y la imagen es pequeña, mantener el original
-      if (blob.size < 20000 && webpBlob.size > blob.size) {
-        console.log(
-          `Mantener PNG original (${blob.size} bytes) en lugar de WebP convertido (${webpBlob.size} bytes)`
-        );
-        return new Blob([await blob.arrayBuffer()], { type: 'image/png' });
-      }
-
-      return new Blob([webpBlob], { type: 'image/png' });
-    } catch (error) {
-      console.error('Error en compressPNG:', error);
-      // Fallback: devolver el blob original
-      return new Blob([await blob.arrayBuffer()], { type: 'image/png' });
-    }
+    return fromBlob(blob, quality, 'auto', 'auto', 'png');
   };
 
   /**
