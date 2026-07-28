@@ -10,8 +10,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@upng/upng-js": "2.2.2",
     "@vueuse/core": "^10.7.2",
     "file-saver": "^2.0.5",
+    "image-q": "4.0.0",
     "image-resize-compress": "^2.1.1",
     "jszip": "^3.10.1",
     "primeflex": "^3.3.1",

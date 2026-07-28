@@ -8,6 +8,9 @@ const __dirname = path.dirname(__filename);
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  worker: {
+    format: 'es'
+  },
   build: {
     target: 'esnext',
     commonjsOptions: {
