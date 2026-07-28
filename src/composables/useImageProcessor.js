@@ -1,7 +1,44 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { MIME_TO_EXTENSION } from '../utils';
+import {
+  MIME_TO_EXTENSION,
+  PNG_COMPRESSION_PROFILE,
+  usesFixedPngProfile
+} from '../utils';
 import { fromBlob } from 'image-resize-compress';
+import { compressPngInWorker } from './pngCompressionWorker';
+
+const GENERIC_ERROR_NOTICE = 'No se pudo comprimir esta imagen.';
+
+const withPngMetadata = image => ({
+  ...image,
+  type: 'image/png',
+  src: image.src.replace(/^data:[^;,]+/, 'data:image/png')
+});
+
+const compressionSettings = (format, quality, profile) => ({
+  compressedQuality: usesFixedPngProfile(format) ? null : Number(quality),
+  compressionProfile:
+    usesFixedPngProfile(format) && profile === PNG_COMPRESSION_PROFILE
+      ? profile
+      : null
+});
+
+const originalResult = (
+  image,
+  format,
+  quality,
+  notice = null,
+  profile = null
+) => ({
+  compressedSrc: image.src,
+  compressedSize: image.originalSize,
+  compressedType: image.type,
+  ...compressionSettings(format, quality, profile),
+  compressionStatus: 'unchanged',
+  compressionNotice: notice,
+  compressionDetails: null
+});
 
 /**
  * Procesa y comprime imágenes con controles optimizados por formato
@@ -29,13 +66,13 @@ export function useImageProcessor() {
       );
 
       // Para imágenes pequeñas sin cambio de formato, mantener original
-      if (!changingFormat && image.originalSize < 10000) {
+      if (
+        !changingFormat &&
+        image.originalSize < 10000 &&
+        !usesFixedPngProfile(format)
+      ) {
         console.log('Imagen muy pequeña detectada - manteniendo original');
-        return {
-          compressedSrc: image.src,
-          compressedSize: image.originalSize,
-          compressedType: image.type
-        };
+        return originalResult(image, format, quality);
       }
 
       // Convertir base64 a blob para procesar
@@ -46,11 +83,27 @@ export function useImageProcessor() {
 
       // Comprimir según el formato específico
       let compressedBlob;
+      let compressionNotice = null;
+      let compressionDetails = null;
+      let compressionProfile = null;
+      let sourceIsPng = null;
 
       switch (outputFormat) {
-        case 'png':
-          compressedBlob = await compressPNG(blob, quality);
+        case 'png': {
+          const {
+            blob: pngBlob,
+            notice: pngNotice = null,
+            profile,
+            sourceIsPng: pngSourceIsPng,
+            ...pngDetails
+          } = await compressPNG(blob);
+          compressedBlob = pngBlob;
+          compressionNotice = pngNotice;
+          compressionDetails = pngDetails;
+          compressionProfile = profile;
+          sourceIsPng = pngSourceIsPng;
           break;
+        }
         case 'avif':
           compressedBlob = await compressAVIF(blob, quality);
           break;
@@ -81,14 +134,22 @@ export function useImageProcessor() {
       ).toFixed(2);
       console.log(`Reducción: ${reduction}%`);
 
-      // Si la compresión aumenta el tamaño y no cambiamos formato, usar original
-      if (compressedBlob.size > image.originalSize && !changingFormat) {
-        console.log('La compresión aumentó el tamaño. Manteniendo original.');
-        return {
-          compressedSrc: image.src,
-          compressedSize: image.originalSize,
-          compressedType: image.type
-        };
+      const sourceMatchesOutput = usesFixedPngProfile(format)
+        ? sourceIsPng === true
+        : !changingFormat;
+
+      // Si la compresión no reduce el tamaño y no cambiamos formato, usar original
+      if (compressedBlob.size >= image.originalSize && sourceMatchesOutput) {
+        console.log('La compresión no redujo el tamaño. Manteniendo original.');
+        return originalResult(
+          usesFixedPngProfile(format) && sourceIsPng
+            ? withPngMetadata(image)
+            : image,
+          format,
+          quality,
+          null,
+          compressionProfile
+        );
       }
 
       // Convertir blob a base64 para almacenar
@@ -98,52 +159,22 @@ export function useImageProcessor() {
       return {
         compressedSrc: base64Data,
         compressedSize: compressedBlob.size,
-        compressedType: format
+        compressedType: format,
+        ...compressionSettings(format, quality, compressionProfile),
+        compressionStatus: 'optimized',
+        compressionNotice,
+        compressionDetails
       };
     } catch (error) {
       console.error('Error en proceso de compresión:', error);
 
       // En caso de error, devolver la imagen original
-      return {
-        compressedSrc: image.src,
-        compressedSize: image.originalSize,
-        compressedType: image.type
-      };
+      return originalResult(image, format, quality, GENERIC_ERROR_NOTICE);
     }
   };
 
   const compressWebP = async (blob, quality) => {
-    try {
-      // El valor 10000 (10KB) es un umbral para imágenes pequeñas
-      // Comprimir imágenes muy pequeñas a veces resulta en tamaños mayores
-      if (blob.size < 10000 && blob.type === 'image/png') {
-        // Para PNGs pequeños con transparencia, a veces es mejor mantener el formato original
-        console.log('PNG pequeño detectado, evaluando si es mejor mantenerlo');
-
-        // Comprimir como WebP para comparar
-        const webpBlob = await fromBlob(blob, quality, 'auto', 'auto', 'webp');
-
-        // Si el WebP es más grande, devolver el PNG original
-        if (webpBlob.size > blob.size) {
-          console.log(
-            `Mantener PNG original: ${blob.size} bytes vs WebP: ${webpBlob.size} bytes`
-          );
-          return new Blob([await blob.arrayBuffer()], { type: 'image/webp' });
-        }
-
-        console.log(
-          `Usando WebP comprimido: ${webpBlob.size} bytes vs PNG original: ${blob.size} bytes`
-        );
-        return webpBlob;
-      }
-
-      // Compresión normal para el resto de casos
-      return fromBlob(blob, quality, 'auto', 'auto', 'webp');
-    } catch (error) {
-      console.error('Error en compressWebP:', error);
-      // Fallback: devolver el blob original con tipo webp
-      return new Blob([await blob.arrayBuffer()], { type: 'image/webp' });
-    }
+    return fromBlob(blob, quality, 'auto', 'auto', 'webp');
   };
 
   const compressJXL = async (blob, quality) => {
@@ -156,9 +187,7 @@ export function useImageProcessor() {
     return fromBlob(blob, quality, 'auto', 'auto', 'avif');
   };
 
-  const compressPNG = async (blob, quality) => {
-    return fromBlob(blob, quality, 'auto', 'auto', 'png');
-  };
+  const compressPNG = blob => compressPngInWorker(blob);
 
   /**
    * Convierte un Blob a una imagen

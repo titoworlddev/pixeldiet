@@ -12,7 +12,11 @@
     FORMAT_OPTIONS,
     MAX_IMAGES,
     MAX_FILE_SIZE,
-    MIME_TO_EXTENSION
+    MIME_TO_EXTENSION,
+    COMPRESSION_QUALITY_LEVELS,
+    getCompressionOutcome,
+    isCompressionCurrent,
+    shouldShowQualityControl
   } from './utils';
   import { useImageProcessor } from './composables/useImageProcessor';
 
@@ -41,6 +45,21 @@
 
   // Propiedades computadas
   const hasImages = computed(() => images.value.length > 0);
+  const showQualityControl = computed(() =>
+    shouldShowQualityControl(selectedFormat.value)
+  );
+  const compressionQualityIndex = computed({
+    get: () =>
+      COMPRESSION_QUALITY_LEVELS.findIndex(
+        level => level.value === compressionQuality.value
+      ),
+    set: index => {
+      compressionQuality.value = COMPRESSION_QUALITY_LEVELS[Number(index)].value;
+    }
+  });
+  const compressionQualityLabel = computed(
+    () => COMPRESSION_QUALITY_LEVELS[compressionQualityIndex.value].label
+  );
   const compressedImages = computed(() =>
     images.value.filter(img => img.isCompressed)
   );
@@ -166,37 +185,65 @@
   const handleCompressAll = async () => {
     if (isProcessing.value || !hasImages.value) return;
 
+    const batchFormat = selectedFormat.value;
+    const batchQuality = compressionQuality.value;
     isProcessing.value = true;
-    let compressedCount = 0;
+    let optimizedCount = 0;
+    let unchangedCount = 0;
+    let failedCount = 0;
 
     try {
       // Comprimir cada imagen
       for (const image of images.value) {
-        // Si ya está comprimida en el formato seleccionado, saltarla
-        if (image.isCompressed && image.compressedType === selectedFormat.value)
+        // Si la compresión coincide con la configuración seleccionada, saltarla
+        if (isCompressionCurrent(image, batchFormat, batchQuality)) {
           continue;
+        }
 
         // Comprimir imagen
-        const result = await compressImage(
-          image,
-          selectedFormat.value,
-          compressionQuality.value
-        );
+        const result = await compressImage(image, batchFormat, batchQuality);
 
         // Actualizar datos
         image.isCompressed = true;
         image.compressedSize = result.compressedSize;
         image.compressedSrc = result.compressedSrc;
         image.compressedType = result.compressedType;
-        compressedCount++;
+        image.compressionStatus = result.compressionStatus;
+        image.compressionNotice = result.compressionNotice;
+        image.compressionDetails = result.compressionDetails;
+        image.compressedQuality = result.compressedQuality;
+        image.compressionProfile = result.compressionProfile;
+
+        const outcome = getCompressionOutcome(result);
+        if (outcome === 'failed') failedCount++;
+        else if (outcome === 'unchanged') unchangedCount++;
+        else optimizedCount++;
       }
 
-      if (compressedCount > 0) {
+      if (optimizedCount > 0) {
         toast.add({
           severity: 'success',
           summary: 'Compresión completada',
-          detail: `${compressedCount} imágenes comprimidas correctamente`,
+          detail: `${optimizedCount} imágenes comprimidas correctamente`,
           life: 3000
+        });
+      }
+
+      if (unchangedCount > 0) {
+        toast.add({
+          severity: 'warn',
+          summary: 'Original conservado',
+          detail: `${unchangedCount} imágenes no consiguieron una versión más pequeña`,
+          life: 4000
+        });
+      }
+
+      if (failedCount > 0) {
+        toast.add({
+          severity: 'error',
+          summary: 'Algunas imágenes no se procesaron',
+          detail: `${failedCount} imágenes no se pudieron comprimir`,
+          life: 4000
         });
       }
     } catch (error) {
@@ -361,7 +408,7 @@
             name="demo[]"
             :multiple="true"
             accept="image/*"
-            :auto="true"
+            :customUpload="true"
             @select="handleFileUpload"
             @drop="handleFileUpload"
             :showUploadButton="false"
@@ -400,6 +447,7 @@
           <button
             v-for="format in formatOptions"
             :key="format.value"
+            :disabled="isProcessing"
             :class="[
               'rounded-lg py-[10px] px-2 text-sm font-medium transition-colors outline-none',
               selectedFormat === format.value
@@ -414,25 +462,34 @@
       </div>
 
       <!-- Selector de calidad -->
-      <div>
+      <div v-if="showQualityControl">
         <div class="flex items-center justify-between mb-1">
-          <h2 class="text-sm font-medium">Calidad de compresión</h2>
+          <label for="compression-quality" class="text-sm font-medium"
+            >Calidad de compresión</label
+          >
           <span class="text-sm font-medium text-blue-500"
-            >{{ compressionQuality }}%</span
+            >{{ compressionQualityLabel }}</span
           >
         </div>
         <div class="w-full">
           <input
+            id="compression-quality"
             type="range"
-            min="30"
-            max="100"
+            min="0"
+            max="2"
             step="1"
-            v-model="compressionQuality"
+            :disabled="isProcessing"
+            :aria-valuetext="compressionQualityLabel"
+            v-model.number="compressionQualityIndex"
             class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
           />
           <div class="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Baja (30%)</span>
-            <span>Alta (100%)</span>
+            <span
+              v-for="level in COMPRESSION_QUALITY_LEVELS"
+              :key="level.value"
+            >
+              {{ level.label }}
+            </span>
           </div>
         </div>
       </div>
@@ -554,8 +611,16 @@
                 </span>
                 <Badge
                   v-if="image.isCompressed"
-                  severity="success"
-                  value="Completado"
+                  :severity="
+                    image.compressionStatus === 'unchanged'
+                      ? 'warning'
+                      : 'success'
+                  "
+                  :value="
+                    image.compressionStatus === 'unchanged'
+                      ? 'Sin cambios'
+                      : 'Completado'
+                  "
                   class="ml-auto"
                 />
                 <Badge
@@ -632,8 +697,16 @@
                 </span>
                 <Badge
                   v-if="image.isCompressed"
-                  severity="success"
-                  value="Completado"
+                  :severity="
+                    image.compressionStatus === 'unchanged'
+                      ? 'warning'
+                      : 'success'
+                  "
+                  :value="
+                    image.compressionStatus === 'unchanged'
+                      ? 'Sin cambios'
+                      : 'Completado'
+                  "
                   class="ml-3"
                 />
                 <Badge v-else severity="info" value="Pendiente" class="ml-3" />
@@ -733,7 +806,11 @@
     appearance: none;
     height: 8px;
     border-radius: 5px;
-    background: #e2e8f0;
+    background:
+      radial-gradient(circle at 0% 50%, #94a3b8 0 2px, transparent 2.5px),
+      radial-gradient(circle at 50% 50%, #94a3b8 0 2px, transparent 2.5px),
+      radial-gradient(circle at 100% 50%, #94a3b8 0 2px, transparent 2.5px),
+      #e2e8f0;
     outline: none;
   }
 
@@ -761,6 +838,11 @@
 
   input[type='range']:focus {
     outline: none;
+  }
+
+  input[type='range']:focus-visible {
+    outline: 2px solid #4f46e5;
+    outline-offset: 4px;
   }
 
   input[type='range']::-ms-track {
