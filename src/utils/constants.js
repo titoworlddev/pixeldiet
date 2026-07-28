@@ -40,3 +40,5 @@ export const MAX_IMAGES = 40;
  * Tamau00f1o mu00e1ximo de archivo permitido (en bytes)
  */
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+export const PNG_COMPRESSION_PROFILE = 'fixed-png-82-v1';
