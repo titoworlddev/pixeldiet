@@ -1,16 +1,31 @@
 :root {
+  color-scheme: dark;
+
   --primary-color: #4f46e5;
   --primary-light: #6366f1;
   --primary-dark: #4338ca;
+  --primary-contrast: #818cf8;
   --success-color: #10b981;
+  --success-text: #34d399;
   --warning-color: #f59e0b;
+  --warning-text: #fbbf24;
   --error-color: #ef4444;
+  --error-text: #f87171;
   --info-color: #3b82f6;
-  --text-color: #1f2937;
-  --text-light: #6b7280;
-  --bg-color: #f9fafb;
-  --card-bg: #ffffff;
-  --border-color: #e5e7eb;
+  --app-canvas: #090d17;
+  --app-surface: #111827;
+  --app-surface-raised: #1f2937;
+  --app-surface-hover: #273449;
+  --app-border: #334155;
+  --app-text: #f8fafc;
+  --app-text-secondary: #cbd5e1;
+  --app-text-muted: #94a3b8;
+  --app-focus: #818cf8;
+  --text-color: var(--app-text);
+  --text-light: var(--app-text-muted);
+  --bg-color: var(--app-canvas);
+  --card-bg: var(--app-surface);
+  --border-color: var(--app-border);
 }
 
 .btn-compress {

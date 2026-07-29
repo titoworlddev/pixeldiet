@@ -44,6 +44,7 @@ vi.mock('primevue/button', () => ({
     h(
       'button',
       {
+        'aria-label': props['aria-label'],
         'data-disabled': String(Boolean(props.disabled)),
         'data-icon': props.icon,
         'data-label': props.label,
@@ -340,7 +341,7 @@ describe('App processing guards', () => {
       isProcessing: true
     });
     const file = { name: 'new.png', size: 100, type: 'image/png' };
-    const classList = { remove: vi.fn() };
+    const classList = { add: vi.fn(), remove: vi.fn() };
     const dropEvent = {
       currentTarget: { classList },
       dataTransfer: { files: [file] },
@@ -353,6 +354,7 @@ describe('App processing guards', () => {
     };
 
     bindings.handleFileUpload({ files: [file] });
+    bindings.onDragOver(dropEvent);
     bindings.onDrop(dropEvent);
     bindings.openFilePicker();
     bindings.clearAll();
@@ -361,7 +363,8 @@ describe('App processing guards', () => {
     expect(bindings.images.value).toHaveLength(1);
     expect(bindings.images.value[0].id).toBe('kept');
     expect(bindings.isUploading.value).toBe(false);
-    expect(dropEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(dropEvent.preventDefault).toHaveBeenCalledTimes(2);
+    expect(classList.add).not.toHaveBeenCalled();
     expect(inputClick).not.toHaveBeenCalled();
     expect(toastAddMock).not.toHaveBeenCalled();
 
@@ -427,6 +430,7 @@ describe('App processing guards', () => {
     });
 
     expect(html).toContain('aria-disabled="true"');
+    expect(html).toContain('tabindex="-1"');
     expect(html).toContain('data-component="file-upload" data-disabled="true"');
     expect(html).toMatch(
       /data-disabled="true"[^>]*data-label="Comprimir todas las imágenes"|data-label="Comprimir todas las imágenes"[^>]*data-disabled="true"/
@@ -444,12 +448,39 @@ describe('App processing guards', () => {
     });
 
     expect(html).toContain('aria-disabled="true"');
+    expect(html).toContain('tabindex="-1"');
     expect(html).toContain('data-component="file-upload" data-disabled="true"');
+    expect(html).toMatch(
+      /data-disabled="true"[^>]*data-label="Procesando\.\.\."|data-label="Procesando\.\.\."[^>]*data-disabled="true"/
+    );
     expect(html).toMatch(
       /data-disabled="true"[^>]*data-label="Limpiar todo"|data-label="Limpiar todo"[^>]*data-disabled="true"/
     );
     expect(html.match(/data-icon="pi pi-times"/g)).toHaveLength(2);
     expect(html.match(/data-disabled="true"/g).length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('App accessibility', () => {
+  it('names icon actions and exposes keyboard-operable controls', async () => {
+    const compressed = {
+      ...image('sample'),
+      ...compressionResult('sample'),
+      isCompressed: true
+    };
+    const { default: App } = await import('./App.vue?accessible-controls');
+    const { html } = await renderApp(App, { images: [compressed] });
+
+    expect(html).toMatch(
+      /class="[^"]*app-upload-panel[^"]*"[^>]*role="button"[^>]*tabindex="0"[^>]*aria-label="Subir imágenes"/
+    );
+    expect(html.match(/aria-label="Descargar sample\.png"/g)).toHaveLength(2);
+    expect(html.match(/aria-label="Eliminar sample\.png"/g)).toHaveLength(2);
+    expect(html).toContain('quality-slider-marks');
+    expect(html).toContain('justify-between mb-2');
+    expect(html.match(/app-accent-primary/g).length).toBeGreaterThanOrEqual(4);
+    expect(html).not.toContain('app-accent-blue');
+    expect(html).not.toContain('outline-none');
   });
 });
 

@@ -4,16 +4,22 @@
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+  color: var(--app-text);
+  background-color: var(--app-canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--app-canvas);
+  color: var(--app-text);
 }
 
 h1 {
@@ -23,17 +29,21 @@ h1 {
 
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: 1px solid var(--app-border);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--app-surface-raised);
+  color: var(--app-text);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--primary-contrast);
+}
+button:disabled {
+  cursor: not-allowed;
 }
 button:focus,
 button:focus-visible {
@@ -46,68 +56,117 @@ button:focus-visible {
 
 #app {
   max-width: 1280px;
+  min-height: 100vh;
   margin: 0 auto;
   /* padding: 2rem; */
+  background-color: var(--app-canvas);
+  color: var(--app-text);
   text-align: center;
 }
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--primary-contrast);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  color: var(--app-focus);
 }
 
 /* Estilos personalizados para botones de PrimeVue */
-.p-button.p-button-text {
-  color: #4f46e5 !important; /* Color violeta para asegurar visibilidad */
+.p-button.p-component {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
 }
 
-.p-button.p-button-danger.p-button-text {
-  color: #ef4444 !important; /* Rojo para botones de peligro */
-}
-
-.p-button.p-button-text .p-button-icon,
-.p-button.p-button-text .p-button-label {
+.p-button.p-component .p-button-icon,
+.p-button.p-component .p-button-label {
   color: inherit !important;
 }
 
-.p-button.p-component {
-  background-color: #4f46e5;
-  border-color: #4f46e5;
+.p-button.p-component:not(:disabled):not(.p-button-text):not(.p-button-outlined):not(.p-button-success):not(.p-button-danger):hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
 }
 
-.p-button.p-component .p-button-label,
-.p-button.p-component .p-button-icon {
-  color: white !important;
+.p-button.p-component.p-button-success {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+  color: #052e16;
 }
 
-.p-fileupload-file-remove.p-button-rounded.p-button-text {
-  color: #ef4444 !important;
+.p-button.p-component.p-button-success:not(:disabled):hover {
+  background-color: #059669;
+  border-color: #059669;
 }
 
-.p-button.p-component.p-button-icon-only.p-button-text.p-button-sm {
-  color: #4f46e5 !important;
+.p-button.p-component.p-button-outlined {
+  background-color: transparent;
+  border-color: var(--primary-contrast);
+  color: var(--primary-contrast) !important;
+}
+
+.p-button.p-component.p-button-outlined.p-button-danger {
+  border-color: var(--error-text);
+  color: var(--error-text) !important;
+}
+
+.p-button.p-component.p-button-text {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--primary-contrast) !important;
+}
+
+.p-button.p-component.p-button-text:not(:disabled):hover {
+  background-color: rgba(129, 140, 248, 0.12);
+}
+
+.p-button.p-component.p-button-danger.p-button-text {
+  color: var(--error-text) !important;
+}
+
+.p-button.p-component.p-button-danger.p-button-text:not(:disabled):hover,
+.p-button.p-component.p-button-danger.p-button-outlined:not(:disabled):hover {
+  background-color: rgba(248, 113, 113, 0.12);
+}
+
+.p-button.p-component:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.p-badge.p-badge-info {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.p-badge.p-badge-success {
+  background-color: var(--success-text);
+  color: #052e16;
+}
+
+.p-badge.p-badge-warning {
+  background-color: var(--warning-text);
+  color: #451a03;
+}
+
+.p-badge.p-badge-danger {
+  background-color: var(--error-text);
+  color: #450a0a;
+}
+
+.p-progressbar {
+  background-color: var(--app-surface-raised);
+}
+
+.p-progressbar .p-progressbar-value {
+  background-color: var(--info-color);
 }
 
 /* Estilos personalizados para Toast */
 .p-toast .p-toast-message .p-toast-message-content .p-toast-message-icon {
-  color: inherit !important;
+  color: var(--toast-accent) !important;
 }
 
 .custom-toast {
@@ -115,9 +174,60 @@ a:hover {
   max-width: 320px;
 }
 
+@media (min-width: 1024px) {
+  .custom-toast.p-toast-top-center {
+    position: fixed !important;
+    top: 1.5rem !important;
+    right: 1.5rem !important;
+    left: auto !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+}
+
+.p-toast .p-toast-message {
+  --toast-accent: var(--info-color);
+
+  background-color: var(--app-surface-raised) !important;
+  border: 1px solid var(--app-border) !important;
+  border-left: 3px solid var(--toast-accent) !important;
+  color: var(--app-text) !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-success {
+  --toast-accent: var(--success-text);
+}
+
+.p-toast .p-toast-message.p-toast-message-warn {
+  --toast-accent: var(--warning-text);
+}
+
+.p-toast .p-toast-message.p-toast-message-error {
+  --toast-accent: var(--error-text);
+}
+
+.p-toast .p-toast-message .p-toast-message-icon {
+  color: var(--toast-accent) !important;
+}
+
+.p-toast .p-toast-message .p-toast-summary {
+  color: var(--app-text) !important;
+}
+
+.p-toast .p-toast-message .p-toast-detail {
+  color: var(--app-text-secondary) !important;
+}
+
+.p-toast .p-toast-message .p-toast-icon-close {
+  color: var(--app-text-secondary) !important;
+}
+
 /* Estilos más específicos para el icono de cierre */
 .custom-toast .p-toast-message .p-toast-icon-close {
-  color: #000000 !important; /* Negro para máximo contraste */
+  color: inherit !important;
   font-size: 1.2rem !important; /* Hacerlo un poco más grande */
   opacity: 0.7 !important; /* Algo de transparencia */
   background-color: transparent !important;
@@ -127,7 +237,7 @@ a:hover {
 }
 
 .custom-toast .p-toast-message .p-toast-icon-close:hover {
-  color: #000000 !important;
+  color: inherit !important;
   opacity: 1 !important; /* Completamente opaco al pasar el mouse */
   background-color: transparent !important;
 }
@@ -136,13 +246,13 @@ a:hover {
 .custom-toast .p-toast-message.p-toast-message-info .p-toast-icon-close,
 .custom-toast .p-toast-message.p-toast-message-warn .p-toast-icon-close,
 .custom-toast .p-toast-message.p-toast-message-error .p-toast-icon-close {
-  color: #000000 !important;
+  color: inherit !important;
   background-color: transparent !important;
 }
 
 /* Estilos específicos para el icono */
 .custom-toast .p-toast-icon-close-icon {
-  color: #000000 !important;
+  color: inherit !important;
   visibility: visible !important;
   display: block !important;
 }
@@ -153,22 +263,39 @@ a:hover {
   align-items: center !important;
   justify-content: center !important;
   border: none !important;
-  outline: none !important;
   box-shadow: none !important;
   background-color: transparent !important;
 }
 
 .p-toast .p-toast-icon-close:hover,
-.p-toast .p-toast-icon-close:focus,
-.p-toast .p-toast-icon-close:active {
+.p-toast .p-toast-icon-close:focus:not(:focus-visible) {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
   background-color: transparent !important;
 }
 
+.p-toast .p-toast-icon-close:focus-visible {
+  outline: 2px solid var(--app-focus) !important;
+  outline-offset: 2px;
+  box-shadow: none !important;
+}
+
 .p-toast .p-toast-icon-close .p-icon {
-  color: #000 !important;
+  color: inherit !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+.p-tooltip .p-tooltip-text {
+  background-color: var(--app-surface-raised);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  box-shadow: none !important;
+}
+
+.p-tooltip.p-tooltip-top .p-tooltip-arrow {
+  border-top-color: var(--app-surface-raised);
 }

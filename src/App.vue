@@ -390,23 +390,18 @@
   // Añadir modo de soltar (drag and drop) personalizado
   const onDragOver = event => {
     event.preventDefault();
-    event.currentTarget.classList.add('border-blue-500');
-    event.currentTarget.classList.add('bg-blue-50');
-    event.currentTarget.classList.add('border-2');
+    if (isProcessing.value || isUploading.value) return;
+    event.currentTarget.classList.add('is-dragging');
   };
 
   const onDragLeave = event => {
     event.preventDefault();
-    event.currentTarget.classList.remove('border-blue-500');
-    event.currentTarget.classList.remove('bg-blue-50');
-    event.currentTarget.classList.remove('border-2');
+    event.currentTarget.classList.remove('is-dragging');
   };
 
   const onDrop = event => {
     event.preventDefault();
-    event.currentTarget.classList.remove('border-blue-500');
-    event.currentTarget.classList.remove('bg-blue-50');
-    event.currentTarget.classList.remove('border-2');
+    event.currentTarget.classList.remove('is-dragging');
 
     if (isProcessing.value || isUploading.value) return;
 
@@ -424,16 +419,16 @@
     class="min-h-screen max-w-4xl lg:max-w-6xl mx-auto p-4 flex flex-col gap-4"
   >
     <!-- Cabecera -->
-    <div class="text-center mb-4">
-      <div class="flex justify-center items-end mb-2">
+    <header class="app-header text-center">
+      <div class="app-header-brand flex justify-center">
         <img src="/logo.svg" alt="Logo" class="size-10 mr-2" />
         <h1 class="text-2xl font-bold">PixelDiet</h1>
       </div>
-      <p class="text-sm text-gray-600">
+      <p class="app-subtitle app-text-secondary text-sm">
         Optimiza tus imágenes web con un solo clic, ahorra espacio sin perder
         calidad
       </p>
-    </div>
+    </header>
 
     <div
       class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch"
@@ -441,16 +436,21 @@
     >
       <!-- Área de carga -->
       <div
-        class="rounded-lg p-5 mb-2 bg-white shadow-md transition-colors duration-200 cursor-pointer lg:mb-0 flex justify-center items-center"
+        class="app-panel app-upload-panel rounded-lg p-5 mb-2 transition-colors duration-200 lg:mb-0 lg:flex lg:flex-col lg:justify-center"
+        role="button"
+        :tabindex="isProcessing || isUploading ? -1 : 0"
+        aria-label="Subir imágenes"
         :aria-disabled="isProcessing || isUploading"
         @dragover="onDragOver"
         @dragleave="onDragLeave"
         @drop="onDrop"
         @click="openFilePicker"
+        @keydown.enter.prevent="openFilePicker"
+        @keydown.space.prevent="openFilePicker"
       >
         <div class="flex items-center justify-center">
           <div class="flex flex-col items-center">
-            <span class="pi pi-upload text-3xl text-blue-500 mb-2"></span>
+            <span class="pi pi-upload app-accent-primary text-3xl mb-2"></span>
             <p class="sm:hidden text-sm font-medium mb-0">
               Subir imágenes
             </p>
@@ -489,7 +489,7 @@
 
       <!-- Tarjeta de controles -->
       <div
-        class="bg-white rounded-lg shadow-md px-4 py-2 mb-3 flex flex-col gap-4 lg:mb-0"
+        class="app-panel rounded-lg px-4 py-2 mb-3 flex flex-col gap-4 lg:mb-0"
       >
         <div>
           <h2 class="text-sm font-medium mb-3">Formato de salida</h2>
@@ -499,10 +499,10 @@
               :key="format.value"
               :disabled="isProcessing"
               :class="[
-                'rounded-lg py-[10px] px-2 text-sm font-medium transition-colors outline-none',
+                'format-option rounded-lg py-[10px] px-2 text-sm font-medium transition-colors',
                 selectedFormat === format.value
-                  ? 'bg-[#4f46e5] text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                  ? 'format-option--active'
+                  : 'format-option--inactive'
               ]"
               @click="handleFormatChange(format.value)"
             >
@@ -513,27 +513,36 @@
 
         <!-- Selector de calidad -->
         <div v-if="showQualityControl">
-          <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center justify-between mb-2">
             <label for="compression-quality" class="text-sm font-medium"
               >Calidad de compresión</label
             >
-            <span class="text-sm font-medium text-blue-500"
+            <span class="app-accent-primary text-sm font-medium"
               >{{ compressionQualityLabel }}</span
             </span>
           </div>
           <div class="w-full">
-            <input
-              id="compression-quality"
-              type="range"
-              min="0"
-              max="2"
-              step="1"
-              :disabled="isProcessing"
-              :aria-valuetext="compressionQualityLabel"
-              v-model.number="compressionQualityIndex"
-              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-            />
-            <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <div class="quality-slider-track">
+              <div class="quality-slider-marks" aria-hidden="true">
+                <span
+                  v-for="level in COMPRESSION_QUALITY_LEVELS"
+                  :key="level.value"
+                  class="quality-slider-mark"
+                ></span>
+              </div>
+              <input
+                id="compression-quality"
+                type="range"
+                min="0"
+                max="2"
+                step="1"
+                :disabled="isProcessing"
+                :aria-valuetext="compressionQualityLabel"
+                v-model.number="compressionQualityIndex"
+                class="quality-slider w-full h-2 rounded-lg appearance-none"
+              />
+            </div>
+            <div class="app-text-muted flex justify-between text-xs mt-1">
               <span
                 v-for="level in COMPRESSION_QUALITY_LEVELS"
                 :key="level.value"
@@ -547,12 +556,12 @@
     </div>
 
     <!-- Botones de acción -->
-    <div v-if="hasImages" class="mb-6 flex flex-col gap-4">
+    <div v-if="hasImages" class="flex flex-col gap-4 lg:mb-6">
       <div class="flex justify-center flex-wrap items-center gap-4">
         <Button
           @click="handleCompressAll"
           :loading="isProcessing"
-          :disabled="isUploading"
+          :disabled="isProcessing || isUploading"
           :label="
             isProcessing ? 'Procesando...' : 'Comprimir todas las imágenes'
           "
@@ -574,7 +583,7 @@
         v-if="hasCompressedImages"
         @click="handleDownloadAll"
         :loading="downloadingAll"
-        :disabled="isProcessing"
+        :disabled="isProcessing || downloadingAll"
         :label="downloadingAll ? 'Preparando...' : 'Descargar todas (ZIP)'"
         icon="pi pi-download"
         class="w-full p-button-primary"
@@ -583,11 +592,11 @@
 
     <!-- Lista de imágenes -->
     <div v-if="hasImages">
-      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="app-panel image-list rounded-lg overflow-hidden">
         <div
           v-for="image in images"
           :key="image.id"
-          class="border-b last:border-b-0 p-3"
+          class="image-list-row p-3"
         >
           <!-- Diseño Móvil (por defecto) y Desktop (responsivo) -->
           <div class="md:hidden">
@@ -610,6 +619,7 @@
                   v-if="image.isCompressed"
                   @click="handleDownloadSingle(image)"
                   icon="pi pi-download"
+                  :aria-label="`Descargar ${image.name}`"
                   class="p-button-text p-button-rounded p-button-sm"
                   v-tooltip.top="'Descargar imagen'"
                 />
@@ -617,6 +627,7 @@
                   @click="removeImage(image.id)"
                   :disabled="isProcessing"
                   icon="pi pi-times"
+                  :aria-label="`Eliminar ${image.name}`"
                   class="p-button-text p-button-rounded p-button-sm p-button-danger"
                   v-tooltip.top="'Eliminar imagen'"
                 />
@@ -631,7 +642,7 @@
                   v-if="
                     image.isCompressed && image.compressedType !== image.type
                   "
-                  class="text-xs text-blue-500 block"
+                  class="app-accent-primary text-xs block"
                 >
                   →
                   {{
@@ -647,11 +658,11 @@
                   {{ formatBytes(image.compressedSize) }}
                   <span
                     :class="{
-                      'text-green-600': !calculateReduction(
+                      'app-text-success': !calculateReduction(
                         image.originalSize,
                         image.compressedSize
                       ).includes('+'),
-                      'text-red-600': calculateReduction(
+                      'app-text-error': calculateReduction(
                         image.originalSize,
                         image.compressedSize
                       ).includes('+')
@@ -720,7 +731,7 @@
                   v-if="
                     image.isCompressed && image.compressedType !== image.type
                   "
-                  class="truncate text-xs text-blue-500 ml-1"
+                  class="app-accent-primary truncate text-xs ml-1"
                 >
                   →
                   {{
@@ -736,11 +747,11 @@
                   {{ formatBytes(image.compressedSize) }}
                   <span
                     :class="{
-                      'text-green-600': !calculateReduction(
+                      'app-text-success': !calculateReduction(
                         image.originalSize,
                         image.compressedSize
                       ).includes('+'),
-                      'text-red-600': calculateReduction(
+                      'app-text-error': calculateReduction(
                         image.originalSize,
                         image.compressedSize
                       ).includes('+')
@@ -779,6 +790,7 @@
                 v-if="image.isCompressed"
                 @click="handleDownloadSingle(image)"
                 icon="pi pi-download"
+                :aria-label="`Descargar ${image.name}`"
                 class="p-button-text p-button-rounded p-button-sm"
                 v-tooltip.top="'Descargar imagen'"
               />
@@ -786,6 +798,7 @@
                 @click="removeImage(image.id)"
                 :disabled="isProcessing"
                 icon="pi pi-times"
+                :aria-label="`Eliminar ${image.name}`"
                 class="p-button-text p-button-rounded p-button-sm p-button-danger"
                 v-tooltip.top="'Eliminar imagen'"
               />
@@ -796,7 +809,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="mt-auto text-center text-xs text-gray-500">
+    <footer class="app-text-muted mt-auto text-center text-xs">
       <p>
         PixelDiet | Comprime y convierte imágenes directamente en tu navegador
       </p>
@@ -805,6 +818,140 @@
 </template>
 
 <style scoped>
+  .app-header {
+    margin-top: -0.5rem;
+  }
+
+  .app-header-brand {
+    align-items: center;
+  }
+
+  .app-subtitle {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .app-header {
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+    .app-header-brand {
+      align-items: flex-end;
+      margin-bottom: 0.5rem;
+    }
+
+    .app-subtitle {
+      display: block;
+    }
+  }
+
+  .app-panel {
+    background-color: var(--app-surface);
+    border: 1px solid var(--app-border);
+    color: var(--app-text);
+  }
+
+  .app-upload-panel {
+    cursor: pointer;
+  }
+
+  .app-upload-panel:not([aria-disabled='true']):hover {
+    border-color: var(--app-border);
+  }
+
+  .app-upload-panel.is-dragging {
+    background-color: rgba(129, 140, 248, 0.12);
+    border-color: var(--primary-contrast);
+  }
+
+  .app-upload-panel[aria-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+
+  .app-upload-panel:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  .app-upload-panel:focus-visible {
+    outline: 2px solid var(--app-focus);
+    outline-offset: 2px;
+  }
+
+  .app-text-secondary {
+    color: var(--app-text-secondary);
+  }
+
+  .app-text-muted {
+    color: var(--app-text-muted);
+  }
+
+  .app-accent-primary {
+    color: var(--primary-contrast);
+  }
+
+  .app-text-success {
+    color: var(--success-text);
+  }
+
+  .app-text-error {
+    color: var(--error-text);
+  }
+
+  .format-option {
+    border: 1px solid transparent;
+  }
+
+  .format-option--active {
+    background-color: var(--primary-color);
+    color: #ffffff;
+  }
+
+  .format-option--inactive {
+    background-color: var(--app-surface-raised);
+    border-color: var(--app-border);
+    color: var(--app-text-secondary);
+  }
+
+  .format-option--inactive:not(:disabled):hover {
+    background-color: var(--app-surface-hover);
+    border-color: var(--app-border);
+  }
+
+  .format-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .format-option:focus:not(:focus-visible) {
+    outline: none !important;
+  }
+
+  .format-option:focus-visible {
+    outline: 2px solid var(--app-focus) !important;
+    outline-offset: 2px;
+  }
+
+  .image-list-row {
+    border-bottom: 1px solid var(--app-border);
+    transition: background-color 0.2s ease;
+  }
+
+  .image-list-row:last-child {
+    border-bottom: 0;
+  }
+
+  .image-list-row img {
+    box-shadow: 0 0 0 1px var(--app-border);
+  }
+
+  @media (hover: hover) {
+    .image-list-row:hover {
+      background-color: var(--app-surface-hover);
+    }
+  }
+
   :deep(.p-fileupload-content) {
     display: none;
   }
@@ -828,7 +975,7 @@
   }
 
   :deep(.p-button:focus-visible) {
-    outline: 2px solid #4f46e5 !important;
+    outline: 2px solid var(--app-focus) !important;
     outline-offset: 2px;
     box-shadow: none !important;
   }
@@ -843,12 +990,6 @@
     }
   }
 
-  /* Estilos para tooltips */
-  :deep(.p-tooltip .p-tooltip-text) {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-  }
-
   /* Estilos para los Toast */
   :deep(.p-toast) {
     opacity: 1 !important;
@@ -856,22 +997,27 @@
 
   :deep(.p-toast .p-toast-message .p-toast-icon-close) {
     opacity: 1 !important;
-    color: black !important;
+    color: inherit !important;
     background-color: transparent !important;
-    outline: none !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
   }
 
-  :deep(.p-toast .p-toast-icon-close:focus),
+  :deep(.p-toast .p-toast-icon-close:focus:not(:focus-visible)),
   :deep(.p-toast .p-toast-icon-close:hover) {
     box-shadow: none !important;
     outline: none !important;
   }
 
+  :deep(.p-toast .p-toast-icon-close:focus-visible) {
+    outline: 2px solid var(--app-focus) !important;
+    outline-offset: 2px;
+    box-shadow: none !important;
+  }
+
   :deep(.p-toast .p-toast-icon-close-icon) {
-    color: black !important;
+    color: inherit !important;
     visibility: visible !important;
   }
 
@@ -883,16 +1029,39 @@
   }
 
   /* Estilos para el control deslizante (slider) */
+  .quality-slider-track {
+    position: relative;
+    height: 8px;
+    border-radius: 5px;
+    background-color: var(--app-surface-raised);
+  }
+
+  .quality-slider-marks {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .quality-slider-mark {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: #64748b;
+  }
+
   input[type='range'] {
+    position: absolute;
+    inset: 0;
+    margin: 0;
     -webkit-appearance: none;
     appearance: none;
     height: 8px;
     border-radius: 5px;
-    background:
-      radial-gradient(circle at 0% 50%, #94a3b8 0 2px, transparent 2.5px),
-      radial-gradient(circle at 50% 50%, #94a3b8 0 2px, transparent 2.5px),
-      radial-gradient(circle at 100% 50%, #94a3b8 0 2px, transparent 2.5px),
-      #e2e8f0;
+    background: transparent;
+    cursor: pointer;
     outline: none;
   }
 
@@ -902,20 +1071,20 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: var(--primary-contrast);
     cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    border: 2px solid var(--app-surface);
+    box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.45);
   }
 
   input[type='range']::-moz-range-thumb {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: var(--primary-contrast);
     cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    border: 2px solid var(--app-surface);
+    box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.45);
   }
 
   input[type='range']:focus {
@@ -923,8 +1092,21 @@
   }
 
   input[type='range']:focus-visible {
-    outline: 2px solid #4f46e5;
+    outline: 2px solid var(--app-focus);
     outline-offset: 4px;
+  }
+
+  input[type='range']:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.55;
+  }
+
+  input[type='range']:disabled::-webkit-slider-thumb {
+    cursor: not-allowed;
+  }
+
+  input[type='range']:disabled::-moz-range-thumb {
+    cursor: not-allowed;
   }
 
   input[type='range']::-ms-track {
