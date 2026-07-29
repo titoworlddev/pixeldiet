@@ -14,11 +14,13 @@
     MAX_FILE_SIZE,
     MIME_TO_EXTENSION,
     COMPRESSION_QUALITY_LEVELS,
+    getBatchCompressionConcurrency,
     getCompressionOutcome,
     isCompressionCurrent,
     shouldShowQualityControl
   } from './utils';
   import { useImageProcessor } from './composables/useImageProcessor';
+  import { MODERN_IMAGE_WORKER_POOL_CAPACITY } from './composables/modernImageCompressionWorker';
 
   // Estado de la aplicación
   const images = ref([]);
@@ -38,6 +40,29 @@
     { value: 'image/jpeg', label: 'JPEG' },
     { value: 'image/jxl', label: 'JXL' }
   ];
+
+  const mapWithConcurrency = async (items, concurrency, mapper) => {
+    const outcomes = new Array(items.length);
+    let nextIndex = 0;
+    const workers = Array.from(
+      { length: Math.min(concurrency, items.length) },
+      async () => {
+        while (nextIndex < items.length) {
+          const index = nextIndex++;
+          try {
+            outcomes[index] = {
+              status: 'fulfilled',
+              value: await mapper(items[index])
+            };
+          } catch (reason) {
+            outcomes[index] = { status: 'rejected', reason };
+          }
+        }
+      }
+    );
+    await Promise.all(workers);
+    return outcomes;
+  };
 
   // Composable para procesamiento de imágenes
   const { compressImage, downloadSingleImage, downloadAllImages } =
@@ -84,6 +109,8 @@
 
   // Gestión de carga de archivos
   const handleFileUpload = event => {
+    if (isProcessing.value || isUploading.value) return;
+
     // Obtener archivos del evento (puede venir de diferentes formas según el evento)
     const files =
       event.files ||
@@ -181,32 +208,49 @@
     });
   };
 
+  const openFilePicker = () => {
+    if (isProcessing.value || isUploading.value) return;
+
+    fileUploadRef.value?.$el.querySelector('input')?.click();
+  };
+
   // Compresión de imágenes
   const handleCompressAll = async () => {
-    if (isProcessing.value || !hasImages.value) return;
+    if (isProcessing.value || isUploading.value || !hasImages.value) return;
 
     const batchFormat = selectedFormat.value;
     const batchQuality = compressionQuality.value;
+    const pendingImages = images.value.filter(
+      image => !isCompressionCurrent(image, batchFormat, batchQuality)
+    );
     isProcessing.value = true;
     let optimizedCount = 0;
     let unchangedCount = 0;
     let failedCount = 0;
 
     try {
-      // Comprimir cada imagen
-      for (const image of images.value) {
-        // Si la compresión coincide con la configuración seleccionada, saltarla
-        if (isCompressionCurrent(image, batchFormat, batchQuality)) {
-          continue;
+      const outcomes = await mapWithConcurrency(
+        pendingImages,
+        getBatchCompressionConcurrency(
+          batchFormat,
+          MODERN_IMAGE_WORKER_POOL_CAPACITY
+        ),
+        image => compressImage(image, batchFormat, batchQuality)
+      );
+
+      outcomes.forEach((outcome, index) => {
+        if (outcome.status === 'rejected') {
+          failedCount++;
+          return;
         }
 
-        // Comprimir imagen
-        const result = await compressImage(image, batchFormat, batchQuality);
-
+        const image = pendingImages[index];
+        const result = outcome.value;
         // Actualizar datos
         image.isCompressed = true;
         image.compressedSize = result.compressedSize;
         image.compressedSrc = result.compressedSrc;
+        image.compressedPreviewSrc = result.compressedPreviewSrc;
         image.compressedType = result.compressedType;
         image.compressionStatus = result.compressionStatus;
         image.compressionNotice = result.compressionNotice;
@@ -214,11 +258,11 @@
         image.compressedQuality = result.compressedQuality;
         image.compressionProfile = result.compressionProfile;
 
-        const outcome = getCompressionOutcome(result);
-        if (outcome === 'failed') failedCount++;
-        else if (outcome === 'unchanged') unchangedCount++;
+        const resultOutcome = getCompressionOutcome(result);
+        if (resultOutcome === 'failed') failedCount++;
+        else if (resultOutcome === 'unchanged') unchangedCount++;
         else optimizedCount++;
-      }
+      });
 
       if (optimizedCount > 0) {
         toast.add({
@@ -311,6 +355,8 @@
 
   // Gestión de imágenes
   const clearAll = () => {
+    if (isProcessing.value || isUploading.value) return;
+
     images.value = [];
     toast.add({
       severity: 'info',
@@ -321,6 +367,8 @@
   };
 
   const removeImage = id => {
+    if (isProcessing.value) return;
+
     images.value = images.value.filter(img => img.id !== id);
     toast.add({
       severity: 'info',
@@ -362,6 +410,8 @@
     event.currentTarget.classList.remove('bg-blue-50');
     event.currentTarget.classList.remove('border-2');
 
+    if (isProcessing.value || isUploading.value) return;
+
     const files = event.dataTransfer.files;
     if (files.length > 0) {
       handleFileUpload({ files });
@@ -388,13 +438,11 @@
     <!-- Área de carga -->
     <div
       class="rounded-lg p-5 mb-2 bg-white shadow-md transition-colors duration-200 cursor-pointer"
+      :aria-disabled="isProcessing || isUploading"
       @dragover="onDragOver"
       @dragleave="onDragLeave"
       @drop="onDrop"
-      @click="
-        $refs.fileUploadRef &&
-          $refs.fileUploadRef.$el.querySelector('input').click()
-      "
+      @click="openFilePicker"
     >
       <div class="flex items-center justify-center">
         <div class="flex flex-col items-center">
@@ -407,6 +455,7 @@
             ref="fileUploadRef"
             name="demo[]"
             :multiple="true"
+            :disabled="isProcessing || isUploading"
             accept="image/*"
             :customUpload="true"
             @select="handleFileUpload"
@@ -501,6 +550,7 @@
         <Button
           @click="handleCompressAll"
           :loading="isProcessing"
+          :disabled="isUploading"
           :label="
             isProcessing ? 'Procesando...' : 'Comprimir todas las imágenes'
           "
@@ -511,6 +561,7 @@
         <!-- Botón de limpieza -->
         <Button
           @click="clearAll"
+          :disabled="isProcessing || isUploading"
           label="Limpiar todo"
           icon="pi pi-trash"
           class="p-button-outlined p-button-danger w-full sm:w-auto sm:flex-2"
@@ -543,7 +594,10 @@
             <div class="flex items-center justify-between mb-2">
               <!-- Imagen miniatura -->
               <img
-                :src="image.isCompressed ? image.compressedSrc : image.src"
+                :src="
+                  image.compressedPreviewSrc ||
+                  (image.isCompressed ? image.compressedSrc : image.src)
+                "
                 class="w-16 h-16 object-cover rounded"
                 :alt="image.name"
               />
@@ -559,6 +613,7 @@
                 />
                 <Button
                   @click="removeImage(image.id)"
+                  :disabled="isProcessing"
                   icon="pi pi-times"
                   class="p-button-text p-button-rounded p-button-sm p-button-danger"
                   v-tooltip.top="'Eliminar imagen'"
@@ -638,7 +693,10 @@
             <!-- Solo visible en desktop -->
             <!-- Imagen miniatura (izquierda) -->
             <img
-              :src="image.isCompressed ? image.compressedSrc : image.src"
+              :src="
+                image.compressedPreviewSrc ||
+                (image.isCompressed ? image.compressedSrc : image.src)
+              "
               class="w-16 h-16 object-cover rounded"
               :alt="image.name"
             />
@@ -724,6 +782,7 @@
               />
               <Button
                 @click="removeImage(image.id)"
+                :disabled="isProcessing"
                 icon="pi pi-times"
                 class="p-button-text p-button-rounded p-button-sm p-button-danger"
                 v-tooltip.top="'Eliminar imagen'"
@@ -759,6 +818,17 @@
   /* Mejora visual para los botones */
   :deep(.p-button) {
     font-weight: 500;
+  }
+
+  :deep(.p-button:focus:not(:focus-visible)) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :deep(.p-button:focus-visible) {
+    outline: 2px solid #4f46e5 !important;
+    outline-offset: 2px;
+    box-shadow: none !important;
   }
 
   /* Estilos para tooltips */

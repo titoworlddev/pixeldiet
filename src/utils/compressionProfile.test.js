@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   COMPRESSION_QUALITY_LEVELS,
+  getBatchCompressionConcurrency,
   getCompressionOutcome,
   isCompressionCurrent,
   shouldShowQualityControl,
@@ -22,6 +23,25 @@ describe('compression profile policy', () => {
     expect(shouldShowQualityControl('image/webp')).toBe(true);
     expect(shouldShowQualityControl('image/jpeg')).toBe(true);
   });
+
+  it('serializes PNG batch compression', () => {
+    expect(getBatchCompressionConcurrency('image/png', 2)).toBe(1);
+  });
+
+  it.each(['image/avif', 'image/jxl'])(
+    'matches %s batch concurrency to either modern pool capacity',
+    format => {
+      expect(getBatchCompressionConcurrency(format, 1)).toBe(1);
+      expect(getBatchCompressionConcurrency(format, 2)).toBe(2);
+    }
+  );
+
+  it.each(['image/jpeg', 'image/webp', 'image/gif'])(
+    'uses four batch slots for native lossy format %s',
+    format => {
+      expect(getBatchCompressionConcurrency(format, 2)).toBe(4);
+    }
+  );
 
   it('checks PNG cache by profile and other formats by quality', () => {
     expect(
@@ -49,6 +69,44 @@ describe('compression profile policy', () => {
       )
     ).toBe(true);
   });
+
+  it.each([
+    ['image/jpeg', 35],
+    ['image/webp', 50],
+    ['image/avif', 75],
+    ['image/jxl', 35]
+  ])('keeps successful %s cache semantics by quality', (format, quality) => {
+    expect(
+      isCompressionCurrent(
+        {
+          isCompressed: true,
+          compressedType: format,
+          compressedQuality: quality,
+          compressionNotice: null
+        },
+        format,
+        quality
+      )
+    ).toBe(true);
+  });
+
+  it.each(['image/avif', 'image/jxl'])(
+    'never treats failed same-format %s output as current',
+    format => {
+      expect(
+        isCompressionCurrent(
+          {
+            isCompressed: true,
+            compressedType: format,
+            compressedQuality: 50,
+            compressionNotice: 'No se pudo comprimir esta imagen.'
+          },
+          format,
+          50
+        )
+      ).toBe(false);
+    }
+  );
 
   it('rejects incomplete, stale, and mismatched cached settings', () => {
     const currentPng = {

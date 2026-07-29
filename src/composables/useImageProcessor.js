@@ -7,6 +7,8 @@ import {
 } from '../utils';
 import { fromBlob } from 'image-resize-compress';
 import { compressPngInWorker } from './pngCompressionWorker';
+import { compressModernImageInWorker } from './modernImageCompressionWorker';
+import { hasModernImageSignature } from '../utils/modernImageCompression';
 
 const GENERIC_ERROR_NOTICE = 'No se pudo comprimir esta imagen.';
 
@@ -61,6 +63,8 @@ export function useImageProcessor() {
 
       // Verificar si estamos cambiando de formato
       const changingFormat = image.type !== format;
+      const outputFormat = format.split('/')[1];
+      const usesModernFormat = outputFormat === 'avif' || outputFormat === 'jxl';
       console.log(
         `Cambiando formato: ${changingFormat} (${image.type} -> ${format})`
       );
@@ -69,7 +73,8 @@ export function useImageProcessor() {
       if (
         !changingFormat &&
         image.originalSize < 10000 &&
-        !usesFixedPngProfile(format)
+        !usesFixedPngProfile(format) &&
+        !usesModernFormat
       ) {
         console.log('Imagen muy pequeña detectada - manteniendo original');
         return originalResult(image, format, quality);
@@ -77,9 +82,10 @@ export function useImageProcessor() {
 
       // Convertir base64 a blob para procesar
       const blob = base64ToBlob(image.src, image.type);
-
-      // Extraer el formato de salida del MIME type
-      const outputFormat = format.split('/')[1];
+      const sourceMatchesModernOutput =
+        usesModernFormat &&
+        !changingFormat &&
+        hasModernImageSignature(await blob.arrayBuffer(), outputFormat);
 
       // Comprimir según el formato específico
       let compressedBlob;
@@ -104,19 +110,32 @@ export function useImageProcessor() {
           sourceIsPng = pngSourceIsPng;
           break;
         }
-        case 'avif':
-          compressedBlob = await compressAVIF(blob, quality);
+        case 'avif': {
+          const result = await compressModernImageInWorker(
+            blob,
+            outputFormat,
+            quality
+          );
+          compressedBlob = result.blob;
+          format = compressedBlob.type;
           break;
+        }
         case 'webp':
           compressedBlob = await compressWebP(blob, quality);
           break;
         case 'jpeg':
           compressedBlob = await compressJPEG(blob, quality);
           break;
-        case 'jxl':
-          compressedBlob = await compressJXL(blob, quality);
-          format = 'image/jxl';
+        case 'jxl': {
+          const result = await compressModernImageInWorker(
+            blob,
+            outputFormat,
+            quality
+          );
+          compressedBlob = result.blob;
+          format = compressedBlob.type;
           break;
+        }
         default:
           compressedBlob = await fromBlob(
             blob,
@@ -136,7 +155,9 @@ export function useImageProcessor() {
 
       const sourceMatchesOutput = usesFixedPngProfile(format)
         ? sourceIsPng === true
-        : !changingFormat;
+        : usesModernFormat
+          ? sourceMatchesModernOutput
+          : !changingFormat;
 
       // Si la compresión no reduce el tamaño y no cambiamos formato, usar original
       if (compressedBlob.size >= image.originalSize && sourceMatchesOutput) {
@@ -163,7 +184,8 @@ export function useImageProcessor() {
         ...compressionSettings(format, quality, compressionProfile),
         compressionStatus: 'optimized',
         compressionNotice,
-        compressionDetails
+        compressionDetails,
+        ...(outputFormat === 'jxl' ? { compressedPreviewSrc: image.src } : {})
       };
     } catch (error) {
       console.error('Error en proceso de compresión:', error);
@@ -177,14 +199,8 @@ export function useImageProcessor() {
     return fromBlob(blob, quality, 'auto', 'auto', 'webp');
   };
 
-  const compressJXL = async (blob, quality) => {
-    return fromBlob(blob, quality, 'auto', 'auto', 'jxl');
-  };
   const compressJPEG = async (blob, quality) => {
     return fromBlob(blob, quality, 'auto', 'auto', 'jpeg');
-  };
-  const compressAVIF = async (blob, quality) => {
-    return fromBlob(blob, quality, 'auto', 'auto', 'avif');
   };
 
   const compressPNG = blob => compressPngInWorker(blob);
