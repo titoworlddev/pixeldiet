@@ -56,18 +56,10 @@ export function useImageProcessor() {
    */
   const compressImage = async (image, format, quality) => {
     try {
-      console.log(
-        `Comprimiendo imagen: ${image.name}, formato: ${format}, calidad: ${quality}%`
-      );
-      console.log(`Tamaño original: ${image.originalSize} bytes`);
-
       // Verificar si estamos cambiando de formato
       const changingFormat = image.type !== format;
       const outputFormat = format.split('/')[1];
       const usesModernFormat = outputFormat === 'avif' || outputFormat === 'jxl';
-      console.log(
-        `Cambiando formato: ${changingFormat} (${image.type} -> ${format})`
-      );
 
       // Para imágenes pequeñas sin cambio de formato, mantener original
       if (
@@ -76,7 +68,6 @@ export function useImageProcessor() {
         !usesFixedPngProfile(format) &&
         !usesModernFormat
       ) {
-        console.log('Imagen muy pequeña detectada - manteniendo original');
         return originalResult(image, format, quality);
       }
 
@@ -146,13 +137,6 @@ export function useImageProcessor() {
           );
       }
 
-      console.log(`Tamaño comprimido: ${compressedBlob.size} bytes`);
-      const reduction = (
-        ((image.originalSize - compressedBlob.size) / image.originalSize) *
-        100
-      ).toFixed(2);
-      console.log(`Reducción: ${reduction}%`);
-
       const sourceMatchesOutput = usesFixedPngProfile(format)
         ? sourceIsPng === true
         : usesModernFormat
@@ -161,7 +145,6 @@ export function useImageProcessor() {
 
       // Si la compresión no reduce el tamaño y no cambiamos formato, usar original
       if (compressedBlob.size >= image.originalSize && sourceMatchesOutput) {
-        console.log('La compresión no redujo el tamaño. Manteniendo original.');
         return originalResult(
           usesFixedPngProfile(format) && sourceIsPng
             ? withPngMetadata(image)
@@ -176,7 +159,6 @@ export function useImageProcessor() {
       // Convertir blob a base64 para almacenar
       const base64Data = await blobToBase64(compressedBlob);
 
-      console.log('Compresión completada exitosamente.');
       return {
         compressedSrc: base64Data,
         compressedSize: compressedBlob.size,

@@ -452,3 +452,19 @@ describe('App processing guards', () => {
     expect(html.match(/data-disabled="true"/g).length).toBeGreaterThanOrEqual(4);
   });
 });
+
+describe('App responsive layout', () => {
+  it('stacks through tablet and uses equal desktop columns for upload and settings', async () => {
+    const { default: App } = await import('./App.vue?responsive-main-layout');
+    const { html } = await renderApp(App);
+
+    expect(html).toContain('max-w-4xl lg:max-w-6xl');
+    expect(html).toContain(
+      'grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch'
+    );
+    expect(html).toContain('lg:items-stretch" style="display:grid;"');
+    expect(html).toContain('lg:mb-0 lg:flex lg:flex-col lg:justify-center');
+    expect(html.match(/lg:mb-0/g)).toHaveLength(2);
+    expect(html).toContain('format-options-grid gap-2');
+  });
+});

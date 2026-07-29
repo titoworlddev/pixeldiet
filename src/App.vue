@@ -121,8 +121,6 @@
       return;
     }
 
-    console.log(`Procesando ${files.length} archivos`, files);
-
     // Validar número máximo de archivos
     if (images.value.length + files.length > MAX_IMAGES) {
       toast.add({
@@ -422,7 +420,9 @@
 <template>
   <Toast position="top-center" class="custom-toast" />
 
-  <main class="min-h-screen max-w-4xl mx-auto p-4 flex flex-col gap-4">
+  <main
+    class="min-h-screen max-w-4xl lg:max-w-6xl mx-auto p-4 flex flex-col gap-4"
+  >
     <!-- Cabecera -->
     <div class="text-center mb-4">
       <div class="flex justify-center items-end mb-2">
@@ -435,110 +435,112 @@
       </p>
     </div>
 
-    <!-- Área de carga -->
     <div
-      class="rounded-lg p-5 mb-2 bg-white shadow-md transition-colors duration-200 cursor-pointer"
-      :aria-disabled="isProcessing || isUploading"
-      @dragover="onDragOver"
-      @dragleave="onDragLeave"
-      @drop="onDrop"
-      @click="openFilePicker"
+      class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch"
+      style="display: grid"
     >
-      <div class="flex items-center justify-center">
-        <div class="flex flex-col items-center">
-          <span class="pi pi-upload text-3xl text-blue-500 mb-2"></span>
-          <p class="text-sm font-medium mb-0">
-            Arrastra imágenes aquí o haz clic para subir
-          </p>
+      <!-- Área de carga -->
+      <div
+        class="rounded-lg p-5 mb-2 bg-white shadow-md transition-colors duration-200 cursor-pointer lg:mb-0 flex justify-center items-center"
+        :aria-disabled="isProcessing || isUploading"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
+        @click="openFilePicker"
+      >
+        <div class="flex items-center justify-center">
+          <div class="flex flex-col items-center">
+            <span class="pi pi-upload text-3xl text-blue-500 mb-2"></span>
+            <p class="sm:hidden text-sm font-medium mb-0">
+              Subir imágenes
+            </p>
+            <p class="hidden sm:block text-sm font-medium mb-0">
+              Arrastra imágenes aquí o haz clic para subir
+            </p>
 
-          <FileUpload
-            ref="fileUploadRef"
-            name="demo[]"
-            :multiple="true"
-            :disabled="isProcessing || isUploading"
-            accept="image/*"
-            :customUpload="true"
-            @select="handleFileUpload"
-            @drop="handleFileUpload"
-            :showUploadButton="false"
-            :showCancelButton="false"
-            class="upload-area w-full"
-          >
-            <template #empty>
-              <Button
-                label="Elegir archivos"
-                class="p-button-primary p-button-sm"
-              />
-            </template>
-          </FileUpload>
-        </div>
-      </div>
-
-      <div v-if="isUploading" class="mt-3">
-        <ProgressBar mode="indeterminate" class="h-1" />
-        <p class="text-center text-xs mt-1">Subiendo imágenes...</p>
-      </div>
-    </div>
-
-    <!-- Tarjeta de controles -->
-    <div
-      class="bg-white rounded-lg shadow-md px-4 py-2 mb-3 flex flex-col gap-4"
-    >
-      <div>
-        <h2 class="text-sm font-medium mb-3">Formato de salida</h2>
-        <div
-          class="gap-2"
-          :style="{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))'
-          }"
-        >
-          <button
-            v-for="format in formatOptions"
-            :key="format.value"
-            :disabled="isProcessing"
-            :class="[
-              'rounded-lg py-[10px] px-2 text-sm font-medium transition-colors outline-none',
-              selectedFormat === format.value
-                ? 'bg-[#4f46e5] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
-            ]"
-            @click="handleFormatChange(format.value)"
-          >
-            {{ format.label }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Selector de calidad -->
-      <div v-if="showQualityControl">
-        <div class="flex items-center justify-between mb-1">
-          <label for="compression-quality" class="text-sm font-medium"
-            >Calidad de compresión</label
-          >
-          <span class="text-sm font-medium text-blue-500"
-            >{{ compressionQualityLabel }}</span
-          >
-        </div>
-        <div class="w-full">
-          <input
-            id="compression-quality"
-            type="range"
-            min="0"
-            max="2"
-            step="1"
-            :disabled="isProcessing"
-            :aria-valuetext="compressionQualityLabel"
-            v-model.number="compressionQualityIndex"
-            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-          />
-          <div class="flex justify-between text-xs text-gray-500 mt-1">
-            <span
-              v-for="level in COMPRESSION_QUALITY_LEVELS"
-              :key="level.value"
+            <FileUpload
+              ref="fileUploadRef"
+              name="demo[]"
+              :multiple="true"
+              :disabled="isProcessing || isUploading"
+              accept="image/*"
+              :customUpload="true"
+              @select="handleFileUpload"
+              @drop="handleFileUpload"
+              :showUploadButton="false"
+              :showCancelButton="false"
+              class="upload-area w-full"
             >
-              {{ level.label }}
+              <template #empty>
+                <Button
+                  label="Elegir archivos"
+                  class="p-button-primary p-button-sm"
+                />
+              </template>
+            </FileUpload>
+          </div>
+        </div>
+
+        <div v-if="isUploading" class="mt-3">
+          <ProgressBar mode="indeterminate" class="h-1" />
+          <p class="text-center text-xs mt-1">Subiendo imágenes...</p>
+        </div>
+      </div>
+
+      <!-- Tarjeta de controles -->
+      <div
+        class="bg-white rounded-lg shadow-md px-4 py-2 mb-3 flex flex-col gap-4 lg:mb-0"
+      >
+        <div>
+          <h2 class="text-sm font-medium mb-3">Formato de salida</h2>
+          <div class="format-options-grid gap-2" style="display: grid">
+            <button
+              v-for="format in formatOptions"
+              :key="format.value"
+              :disabled="isProcessing"
+              :class="[
+                'rounded-lg py-[10px] px-2 text-sm font-medium transition-colors outline-none',
+                selectedFormat === format.value
+                  ? 'bg-[#4f46e5] text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+              ]"
+              @click="handleFormatChange(format.value)"
+            >
+              {{ format.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Selector de calidad -->
+        <div v-if="showQualityControl">
+          <div class="flex items-center justify-between mb-1">
+            <label for="compression-quality" class="text-sm font-medium"
+              >Calidad de compresión</label
+            >
+            <span class="text-sm font-medium text-blue-500"
+              >{{ compressionQualityLabel }}</span
             </span>
+          </div>
+          <div class="w-full">
+            <input
+              id="compression-quality"
+              type="range"
+              min="0"
+              max="2"
+              step="1"
+              :disabled="isProcessing"
+              :aria-valuetext="compressionQualityLabel"
+              v-model.number="compressionQualityIndex"
+              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span
+                v-for="level in COMPRESSION_QUALITY_LEVELS"
+                :key="level.value"
+              >
+                {{ level.label }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -829,6 +831,16 @@
     outline: 2px solid #4f46e5 !important;
     outline-offset: 2px;
     box-shadow: none !important;
+  }
+
+  .format-options-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  @media (min-width: 1024px) {
+    .format-options-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
   }
 
   /* Estilos para tooltips */
