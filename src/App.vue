@@ -807,6 +807,16 @@
         </div>
       </div>
     </div>
+    <section v-else class="empty-results" aria-labelledby="empty-results-title">
+      <i class="pi pi-images empty-results-icon" aria-hidden="true"></i>
+      <h2 id="empty-results-title" class="empty-results-title">
+        Aún no hay imágenes
+      </h2>
+      <p class="empty-results-copy">
+        Súbelas y comprímelas directamente en tu navegador, <br/>sin que salgan de
+        tu dispositivo.
+      </p>
+    </section>
 
     <!-- Footer -->
     <footer class="app-text-muted mt-auto text-center text-xs">
@@ -944,6 +954,42 @@
 
   .image-list-row img {
     box-shadow: 0 0 0 1px var(--app-border);
+  }
+
+  .empty-results {
+    display: flex;
+    min-height: 14rem;
+    padding: 3rem 1rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .empty-results-icon {
+    margin-bottom: 1rem;
+    color: var(--primary-contrast);
+    font-size: 2rem;
+  }
+
+  .empty-results-title {
+    color: var(--app-text-secondary);
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .empty-results-copy {
+    max-width: 30rem;
+    margin: 0.375rem auto 0;
+    color: var(--app-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 768px) {
+    .empty-results {
+      min-height: 16rem;
+    }
   }
 
   @media (hover: hover) {
